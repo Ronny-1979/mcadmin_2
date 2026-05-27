@@ -1582,7 +1582,9 @@ function detect_pack_type(string $packDir): ?string {
     foreach ($mf['modules'] ?? [] as $module) {
         $type = strtolower($module['type'] ?? '');
         if ($type === 'resources') return 'resource';
-        if (in_array($type, ['data', 'script', 'interface', 'javascript', 'world_template'], true)) return 'behavior';
+        if (in_array($type, ['data', 'script', 'interface', 'javascript', 'client_data'], true)) return 'behavior';
+        // 'world_template' bewusst entfernt: World-Templates sind keine BDS-Server-Packs
+        // und landen sonst fälschlicherweise in behavior_packs/. Stattdessen: null → überspringen.
     }
     return null;
 }
@@ -2115,11 +2117,23 @@ function install_pack_dir(string $dir, array &$results): void {
     $manifest = $dir . '/manifest.json';
     if (file_exists($manifest)) {
         $data    = json_decode(file_get_contents($manifest), true);
-        $modules = $data['modules'] ?? [];
-        $type    = 'resource';
+        $modules  = $data['modules'] ?? [];
+        $type     = 'resource'; // Default für unbekannte/fehlende Typen (tolerant)
+        $skipPack = false;
         foreach ($modules as $m) {
-            if (in_array($m['type'], ['data', 'script'])) { $type = 'behavior'; break; }
+            $mtype = strtolower($m['type'] ?? '');
+            // Behavior-Pack-Typen (inkl. alter Script-API 1.0 und Client-Scripts)
+            if (in_array($mtype, ['data', 'script', 'interface', 'javascript', 'client_data'], true)) {
+                $type = 'behavior';
+                break;
+            }
+            // Skin-Packs, Welt-Templates und Persona-Pieces sind keine BDS-Server-Packs
+            if (in_array($mtype, ['skin_pack', 'world_template', 'persona_piece'], true)) {
+                $skipPack = true;
+                break;
+            }
         }
+        if ($skipPack) return; // Kein installierbares Server-Pack → überspringen
         $name     = $data['header']['name'] ?? basename($dir);
         $destBase = $type === 'behavior' ? MC_PACKS_BEHAVIOR_DIR : MC_PACKS_RESOURCE_DIR;
         if (!is_dir($destBase)) mkdir($destBase, 0755, true);
