@@ -2132,7 +2132,18 @@ function install_pack_dir(string $dir, array &$results): void {
     foreach (scandir($dir) as $sub) {
         if ($sub === '.' || $sub === '..') continue;
         $p = $dir . '/' . $sub;
-        if (is_dir($p)) install_pack_dir($p, $results);
+        if (is_dir($p)) {
+            install_pack_dir($p, $results);
+        } elseif (is_file($p) && preg_match('/\.(mcaddon|mcpack|zip)$/i', $sub)) {
+            // Verschachtelte Archive entpacken und rekursiv verarbeiten.
+            // Laut offizieller Bedrock-Doku darf ein .mcaddon beliebig viele
+            // weitere .mcaddon/.mcpack-Dateien enthalten (jede Tiefe erlaubt).
+            $nestedTmp = sys_get_temp_dir() . '/mcpack_nested_' . bin2hex(random_bytes(8));
+            if (@mkdir($nestedTmp, 0755, true) && extract_zip($p, $nestedTmp)) {
+                install_pack_dir($nestedTmp, $results);
+            }
+            exec('rm -rf ' . escapeshellarg($nestedTmp));
+        }
     }
 }
 
