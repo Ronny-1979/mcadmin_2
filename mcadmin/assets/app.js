@@ -402,18 +402,36 @@ async function toggleMissingPanel(worldName){
   panel.innerHTML='<div class="dim xs2" style="padding:6px 0"><span class="spin">⟳</span> Lade...</div>';
   try{
     const data=await api('get_world_packs',{world:worldName});
-    const missing=[...(data.behavior_missing||[]).map(p=>({...p,type:'Behavior'})),
-                   ...(data.resource_missing||[]).map(p=>({...p,type:'Resource'}))];
+    const all=await api('get_packs');
+    const missing=[...(data.behavior_missing||[]).map(p=>({...p,type:'Behavior',pt:'behavior'})),
+                   ...(data.resource_missing||[]).map(p=>({...p,type:'Resource',pt:'resource'}))];
     if(!missing.length){
       panel.innerHTML='<div class="dim xs2" style="padding:6px 0">✅ Keine fehlenden Packs mehr.</div>';
       return;
     }
     panel.innerHTML=`<div>
       <div style="font-weight:600;font-size:13px;margin-bottom:8px">Fehlende Packs:</div>
-      ${missing.map(p=>`<div class="xs2" style="margin-bottom:5px">
-        <span class="badge badge-r">${e(p.type)}</span>
-        <code style="font-size:11px">${e(p.uuid)}</code> · v${e(p.version)}
-      </div>`).join('')}
+      ${missing.map((p,i)=>{
+        const candidates=(all[p.pt]||[]).filter(x=>x.user_pack!==false);
+        const selId=`mpp-map-${i}-${Math.random().toString(36).slice(2)}`;
+        return `<div class="pkc pk-missing" style="align-items:flex-start;margin-bottom:8px">
+          <div class="pki">❓</div>
+          <div style="flex:1;min-width:0">
+            <div class="xs2" style="margin-bottom:5px"><span class="badge badge-r">${e(p.type)}</span> <code style="font-size:11px">${e(p.uuid)}</code> · v${e(p.version)}</div>
+            <div class="xs2 dim" style="margin-bottom:5px">Glücks-Reparatur: auf ein bereits installiertes ${e(p.type)}-Pack umstellen.</div>
+            <div class="ig" style="gap:6px">
+              <select id="${selId}" style="min-width:220px">
+                <option value="">-- installiertes Pack wählen --</option>
+                ${candidates.map(c=>`<option value="${e(c.uuid)}">${e(c.name)} · v${e(c.version)}</option>`).join('')}
+              </select>
+              <button class="btn warn sm" onclick="remapMissingPack('${e(worldName)}','${e(p.pt)}','${e(p.uuid)}','${selId}')">🔧 Umstellen</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+      <div class="ub warn2" style="margin-top:10px">
+        <div>⚠️</div><div><strong>Hinweis:</strong> Umstellen ist ein Versuch, wenn ein Pack nach einem Update neue UUID/Version hat. Vorher am besten Backup machen.</div>
+      </div>
       <div class="uz" style="margin-top:10px" onclick="document.getElementById('mpp-up-${e(worldName)}').click()">
         <div class="ui">📦</div>
         <div>Fehlendes Pack hochladen</div>
@@ -441,6 +459,16 @@ async function supplyMissingPack(worldName,inp){
     st.innerHTML='<div class="xs2" style="margin-top:8px;color:var(--red)">❌ Upload fehlgeschlagen</div>';
   }
   inp.value='';
+}
+// Stellt eine fehlende Welt-Referenz auf ein bereits installiertes Pack um
+async function remapMissingPack(worldName,type,oldUuid,selectId){
+  const sel=document.getElementById(selectId);
+  const newUuid=sel?sel.value:'';
+  if(!newUuid){toast('Bitte erst ein installiertes Pack auswählen','error');return;}
+  if(!confirm('Diese Welt-Referenz wirklich auf das gewählte Pack umstellen?\n\nVorher sollte ein Backup vorhanden sein.'))return;
+  const r=await api('remap_missing_pack',{world:worldName,type,old_uuid:oldUuid,new_uuid:newUuid});
+  toast(r.message||(r.success?'Umgestellt':'Fehler'),r.success?'success':'error');
+  if(r.success){await loadWorlds();await loadAllPacks();}
 }
 // Wechselt zur gewählten Welt nach Bestätigung und bietet Server-Neustart an
 async function switchW(name){
@@ -597,7 +625,7 @@ async function togglePk(w,u,t,en){const r=await api('toggle_pack',{world:w,uuid:
 // Wechselt zwischen Resource- und Behavior-Pack-Tab
 function switchPkTab(tab,btn){const c=btn.closest('.card');c.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));c.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById('pt-'+(tab==='resource'?'res':'beh')).classList.add('active');}
 // Lädt eine Pack-Datei hoch und installiert sie auf dem Server
-async function uploadPack(inp){const f=inp.files[0];if(!f)return;toast('Installiere Pack...','info');const world=document.getElementById('pk-world').value;const r=await api('upload_pack',{world:world},{pack:f});toast(r.message||(r.success?'Pack installiert':'Fehler'),r.success?'success':'error');if(r.success){await loadAllPacks();if(world)await loadWPacks();}inp.value='';}
+async function uploadPack(inp){const f=inp.files[0];if(!f)return;toast('Installiere Pack...','info');const r=await api('upload_pack',{},{pack:f});toast(r.message||(r.success?'Pack installiert':'Fehler'),r.success?'success':'error');if(r.success)loadAllPacks();inp.value='';}
 // Lädt eine .mcworld-Datei hoch und importiert sie als neue Welt
 async function uploadWorld(inp){const f=inp.files[0];if(!f)return;toast('Importiere Welt...','info');try{const r=await api('upload_world',{},{world:f});toast(r.message||(r.success?'Welt importiert':'Fehler'),r.success?'success':'error');if(r.success)loadWorlds();}catch(err){toast('Upload fehlgeschlagen: '+err.message,'error');}inp.value='';}
 

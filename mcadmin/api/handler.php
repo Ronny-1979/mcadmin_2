@@ -163,19 +163,7 @@ try {
             if (!isset($_FILES['pack'])||$_FILES['pack']['error']!==UPLOAD_ERR_OK) {
                 echo json_encode(['success'=>false,'message'=>'Upload fehlgeschlagen']); break;
             }
-            $r = install_pack($_FILES['pack']['tmp_name'], $_FILES['pack']['name']);
-            if ($r['success']) {
-                $world = $_POST['world'] ?? '';
-                if ($world && preg_match('/^[a-zA-Z0-9_\- ]{1,64}$/', $world)) {
-                    foreach ($r['packs'] ?? [] as $p) {
-                        if (!empty($p['uuid']) && !empty($p['type'])) {
-                            toggle_pack_for_world($world, $p['uuid'], $p['type'], true);
-                        }
-                    }
-                    apply_world_packs($world);
-                }
-            }
-            echo json_encode($r); break;
+            echo json_encode(install_pack($_FILES['pack']['tmp_name'], $_FILES['pack']['name'])); break;
         case 'supply_missing_pack':  // Installiert fehlendes Pack und repariert die Welt-Referenz
             $world = $_POST['world'] ?? '';
             if (!$world || !preg_match('/^[a-zA-Z0-9_\- ]{1,64}$/', $world)) {
@@ -197,6 +185,13 @@ try {
             } else {
                 echo json_encode(['success'=>false,'message'=>'Pack installiert, aber UUID stimmt mit keinem fehlenden Pack überein']);
             }
+            break;
+        case 'remap_missing_pack': // Fehlende UUID auf ein bereits installiertes Pack umstellen
+            $world   = $_POST['world']    ?? '';
+            $type    = $_POST['type']     ?? 'resource';
+            $oldUuid = $_POST['old_uuid'] ?? '';
+            $newUuid = $_POST['new_uuid'] ?? '';
+            echo json_encode(remap_missing_pack_for_world($world, $type, $oldUuid, $newUuid));
             break;
 
         // ── BACKUPS ───────────────────────────────────────────

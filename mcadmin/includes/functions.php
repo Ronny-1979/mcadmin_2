@@ -1937,6 +1937,61 @@ function toggle_pack_for_world(string $worldName, string $packUuid, string $pack
     return save_state($state);
 }
 
+// Ersetzt eine fehlende Pack-Referenz einer Welt durch ein bereits installiertes Pack.
+// Das ist bewusst ein manueller Reparaturmodus: hilfreich bei Bedrock-Updates, wenn ein Pack
+// denselben Inhalt hat, aber neue UUID/Version im manifest.json besitzt.
+function remap_missing_pack_for_world(string $worldName, string $packType, string $oldUuid, string $newUuid): array {
+    $packType = strtolower($packType);
+    if (!in_array($packType, ['behavior', 'resource'], true)) {
+        return ['success' => false, 'message' => 'Ungültiger Pack-Typ'];
+    }
+    if ($worldName === '' || !preg_match('/^[a-zA-Z0-9_\- ]{1,64}$/', $worldName)) {
+        return ['success' => false, 'message' => 'Ungültiger Weltname'];
+    }
+    if (!preg_match('/^[0-9a-fA-F\-]{36}$/', $oldUuid) || !preg_match('/^[0-9a-fA-F\-]{36}$/', $newUuid)) {
+        return ['success' => false, 'message' => 'Ungültige UUID'];
+    }
+
+    $state = get_state();
+    if (!isset($state['world_packs'][$worldName][$packType]) || !is_array($state['world_packs'][$worldName][$packType])) {
+        return ['success' => false, 'message' => 'Für diese Welt gibt es keine Pack-Liste'];
+    }
+
+    $installed = find_installed_pack($packType, $newUuid);
+    if (!$installed) {
+        return ['success' => false, 'message' => 'Das gewählte Pack ist nicht installiert'];
+    }
+
+    $hadOld = false;
+    foreach ($state['world_packs'][$worldName][$packType] as $entry) {
+        $ref = normalize_pack_ref($entry);
+        if ($ref && strtolower($ref['pack_id']) === strtolower($oldUuid)) {
+            $hadOld = true;
+            break;
+        }
+    }
+    if (!$hadOld) {
+        return ['success' => false, 'message' => 'Die fehlende Pack-Referenz wurde in der Welt nicht gefunden'];
+    }
+
+    // Alte kaputte Referenz entfernen und die gewählte installierte Version eintragen.
+    remove_pack_ref_by_uuid($state['world_packs'][$worldName][$packType], $oldUuid);
+    add_pack_ref($state['world_packs'][$worldName][$packType], $installed['uuid'], $installed['version']);
+    add_pack_dependencies_for_world($state, $worldName, $installed);
+
+    if (!save_state($state)) {
+        return ['success' => false, 'message' => 'State konnte nicht gespeichert werden'];
+    }
+
+    apply_world_packs($worldName);
+
+    return [
+        'success' => true,
+        'message' => 'Pack-Referenz wurde auf "' . ($installed['name'] ?? $installed['uuid']) . '" v' . ($installed['version'] ?? '?') . ' umgestellt',
+        'pack' => $installed,
+    ];
+}
+
 // Schreibt die aktiven Packs einer Welt in die world_*_packs.json-Dateien
 function apply_world_packs(string $worldName): void {
     $worldPath = MC_WORLDS_DIR . '/' . $worldName;
@@ -2034,20 +2089,10 @@ function install_pack(string $tmpPath, string $originalName): array {
     install_pack_dir($tmpDir, $results);
     exec('rm -rf ' . escapeshellarg($tmpDir));
     if (empty($results)) return ['success' => false, 'message' => 'Kein gültiges Pack gefunden'];
-    $labels = array_map(fn($r) => "{$r['name']} ({$r['type']} pack)", $results);
-    // Bei einem einzelnen Pack uuid+type direkt mitliefern (für Auto-Aktivierung)
-    $first  = $results[0];
-    return [
-        'success' => true,
-        'message' => implode(', ', $labels),
-        'uuid'    => $first['uuid'],
-        'type'    => $first['type'],
-        'packs'   => $results,
-    ];
+    return ['success' => true, 'message' => implode(', ', $results)];
 }
 
-// Durchsucht ein Verzeichnis rekursiv und installiert gefundene Packs (anhand manifest.json).
-// $results wird mit Arrays der Form ['name'=>..., 'uuid'=>..., 'type'=>...] befüllt.
+// Durchsucht ein Verzeichnis rekursiv und installiert gefundene Packs (anhand manifest.json)
 function install_pack_dir(string $dir, array &$results): void {
     $manifest = $dir . '/manifest.json';
     if (file_exists($manifest)) {
@@ -2058,13 +2103,12 @@ function install_pack_dir(string $dir, array &$results): void {
             if (in_array($m['type'], ['data', 'script'])) { $type = 'behavior'; break; }
         }
         $name     = $data['header']['name'] ?? basename($dir);
-        $uuid     = strtolower(trim((string)($data['header']['uuid'] ?? '')));
         $destBase = $type === 'behavior' ? MC_PACKS_BEHAVIOR_DIR : MC_PACKS_RESOURCE_DIR;
         if (!is_dir($destBase)) mkdir($destBase, 0755, true);
         $destPath = $destBase . '/' . sanitize_dirname($name);
         copy_pack_skip_subpacks($dir, $destPath);
         mark_mcadmin_user_pack($destPath);
-        $results[] = ['name' => $name, 'uuid' => $uuid, 'type' => $type];
+        $results[] = "$name ($type pack)";
         return;
     }
     foreach (scandir($dir) as $sub) {
