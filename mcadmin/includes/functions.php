@@ -1869,6 +1869,7 @@ function get_installed_packs(string $type = 'behavior'): array {
                 'dependencies'        => $data['dependencies'] ?? [],
                 'used_by_worlds'      => $usage['used_by_worlds'],
                 'imported_by_worlds'  => $usage['imported_by_worlds'],
+                'user_pack'           => is_mcadmin_user_pack($path),
             ];
         }
     }
@@ -2034,20 +2035,45 @@ function install_pack(string $tmpPath, string $originalName): array {
     install_pack_dir($tmpDir, $results);
     exec('rm -rf ' . escapeshellarg($tmpDir));
     if (empty($results)) return ['success' => false, 'message' => 'Kein gültiges Pack gefunden'];
-    $labels = array_map(fn($r) => "{$r['name']} ({$r['type']} pack)", $results);
-    // Bei einem einzelnen Pack uuid+type direkt mitliefern (für Auto-Aktivierung)
-    $first  = $results[0];
-    return [
-        'success' => true,
-        'message' => implode(', ', $labels),
-        'uuid'    => $first['uuid'],
-        'type'    => $first['type'],
-        'packs'   => $results,
-    ];
+    return ['success' => true, 'message' => implode(', ', $results)];
 }
 
-// Durchsucht ein Verzeichnis rekursiv und installiert gefundene Packs (anhand manifest.json).
-// $results wird mit Arrays der Form ['name'=>..., 'uuid'=>..., 'type'=>...] befüllt.
+// Löscht ein selbst installiertes Pack: deaktiviert es in allen Welten, entfernt den Ordner.
+// Schlägt fehl, wenn das Pack kein user-pack ist (Schutz vor Löschen von Bedrock-Systempacks).
+function delete_pack(string $uuid, string $type): array {
+    $dir = $type === 'behavior' ? MC_PACKS_BEHAVIOR_DIR : MC_PACKS_RESOURCE_DIR;
+    if (!is_dir($dir)) return ['success' => false, 'message' => 'Pack-Verzeichnis nicht gefunden'];
+
+    // Pack-Ordner anhand UUID suchen
+    $packPath = null;
+    foreach (scandir($dir) as $d) {
+        if ($d === '.' || $d === '..') continue;
+        $path     = $dir . '/' . $d;
+        $manifest = $path . '/manifest.json';
+        if (!is_dir($path) || !file_exists($manifest)) continue;
+        $data = json_decode(file_get_contents($manifest), true) ?: [];
+        if (strtolower($data['header']['uuid'] ?? '') === strtolower($uuid)) {
+            $packPath = $path;
+            break;
+        }
+    }
+    if (!$packPath) return ['success' => false, 'message' => 'Pack nicht gefunden'];
+    if (!is_mcadmin_user_pack($packPath))
+        return ['success' => false, 'message' => 'Nur selbst installierte Packs können gelöscht werden'];
+
+    // Pack aus allen Welten deaktivieren
+    $state  = get_state();
+    $worlds = array_keys($state['world_packs'] ?? []);
+    foreach ($worlds as $world) {
+        toggle_pack_for_world($world, $uuid, $type, false);
+        apply_world_packs($world);
+    }
+
+    exec('rm -rf ' . escapeshellarg($packPath));
+    return ['success' => true, 'message' => 'Pack gelöscht'];
+}
+
+// Durchsucht ein Verzeichnis rekursiv und installiert gefundene Packs (anhand manifest.json)
 function install_pack_dir(string $dir, array &$results): void {
     $manifest = $dir . '/manifest.json';
     if (file_exists($manifest)) {
@@ -2058,13 +2084,12 @@ function install_pack_dir(string $dir, array &$results): void {
             if (in_array($m['type'], ['data', 'script'])) { $type = 'behavior'; break; }
         }
         $name     = $data['header']['name'] ?? basename($dir);
-        $uuid     = strtolower(trim((string)($data['header']['uuid'] ?? '')));
         $destBase = $type === 'behavior' ? MC_PACKS_BEHAVIOR_DIR : MC_PACKS_RESOURCE_DIR;
         if (!is_dir($destBase)) mkdir($destBase, 0755, true);
         $destPath = $destBase . '/' . sanitize_dirname($name);
         copy_pack_skip_subpacks($dir, $destPath);
         mark_mcadmin_user_pack($destPath);
-        $results[] = ['name' => $name, 'uuid' => $uuid, 'type' => $type];
+        $results[] = "$name ($type pack)";
         return;
     }
     foreach (scandir($dir) as $sub) {
