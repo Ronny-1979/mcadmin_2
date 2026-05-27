@@ -418,6 +418,7 @@ async function toggleMissingPanel(worldName){
           <div class="pkv"><span class="badge badge-r" style="margin-right:4px">${e(p.type)}</span>v${e(p.version)} · Nicht installiert</div>
           ${(p.required_by&&p.required_by.length)?`<div class="pkv" style="color:var(--text2);margin-top:2px">📎 Benötigt von: ${p.required_by.map(n=>e(n)).join(', ')}</div>`:''}
         </div>
+        <button class="icon-btn" title="Referenz entfernen" onclick="removeMissingRef('${e(worldName)}','${e(p.uuid)}','${p.type.toLowerCase()}')">✕</button>
       </div>`).join('')}
       <div class="uz" style="margin-top:10px" onclick="document.getElementById('mpp-up-${e(worldName)}').click()">
         <div class="ui">📦</div>
@@ -589,7 +590,7 @@ function renderPacks(){
     // Fehlende Packs (UUID vorhanden, aber nicht installiert)
     if(missing.length){
       html+=`<div style="margin-top:8px;padding:4px 2px;font-size:11px;color:var(--text2)">Fehlende Packs — nicht auf diesem Server installiert:</div>`;
-      html+=missing.map(mp=>`<div class="pkc pk-missing"><div class="pki">❓</div><div style="flex:1;min-width:0"><div class="pkn" style="color:var(--red)">${mp.name?e(mp.name):'Unbekanntes Pack'}</div><div class="pkv" style="user-select:all">${e(mp.uuid)}</div><div class="pkv">v${e(mp.version)} · Nicht installiert</div></div><span class="badge badge-r" style="flex-shrink:0">Fehlt</span></div>`).join('');
+      html+=missing.map(mp=>`<div class="pkc pk-missing"><div class="pki">❓</div><div style="flex:1;min-width:0"><div class="pkn" style="color:var(--red)">${mp.name?e(mp.name):'Unbekanntes Pack'}</div><div class="pkv" style="user-select:all">${e(mp.uuid)}</div><div class="pkv">v${e(mp.version)} · Nicht installiert</div></div><span class="badge badge-r" style="flex-shrink:0">Fehlt</span><button class="icon-btn" title="Referenz entfernen" onclick="removeMissingRef('${e(world)}','${e(mp.uuid)}','${t}')">✕</button></div>`).join('');
     }
     if(!html){
       html=`<div class="dim xs2" style="text-align:center;padding:18px">${world?'Keine Packs für diese Welt':'Keine Packs installiert'}</div>`;
@@ -601,6 +602,8 @@ function renderPacks(){
 async function togglePk(w,u,t,en){const r=await api('toggle_pack',{world:w,uuid:u,type:t,enable:en?'1':'0'});if(r.success){toast(en?'Aktiviert':'Deaktiviert','success');await loadWPacks();}else{toast('Fehler','error');await loadWPacks();}}
 // Löscht ein selbst installiertes Pack nach Bestätigung und aktualisiert die Listen
 async function deletePack(uuid,type,name){if(!confirm(`Pack "${name}" wirklich löschen?\nEs wird aus allen Welten entfernt und vom Server gelöscht.`))return;const r=await api('delete_pack',{uuid,type});toast(r.message||(r.success?'Pack gelöscht':'Fehler'),r.success?'success':'error');if(r.success){await loadAllPacks();await loadWPacks();}}
+// Entfernt eine gebrochene Pack-Referenz aus dem Welt-State (kein Pack nötig)
+async function removeMissingRef(world,uuid,type){if(!confirm('Gebrochene Pack-Referenz aus dieser Welt entfernen?\nDas Pack bleibt nicht mehr der Welt zugewiesen.'))return;const r=await api('toggle_pack',{world,uuid,type,enable:'0'});toast(r.success?'Referenz entfernt':'Fehler',r.success?'success':'error');if(r.success){await loadWorlds();await loadAllPacks();await loadWPacks();}}
 // Wechselt zwischen Resource- und Behavior-Pack-Tab
 function switchPkTab(tab,btn){const c=btn.closest('.card');c.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));c.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById('pt-'+(tab==='resource'?'res':'beh')).classList.add('active');}
 // Lädt eine Pack-Datei hoch und installiert sie auf dem Server
