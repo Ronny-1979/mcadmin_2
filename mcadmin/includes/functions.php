@@ -2034,10 +2034,20 @@ function install_pack(string $tmpPath, string $originalName): array {
     install_pack_dir($tmpDir, $results);
     exec('rm -rf ' . escapeshellarg($tmpDir));
     if (empty($results)) return ['success' => false, 'message' => 'Kein gültiges Pack gefunden'];
-    return ['success' => true, 'message' => implode(', ', $results)];
+    $labels = array_map(fn($r) => "{$r['name']} ({$r['type']} pack)", $results);
+    // Bei einem einzelnen Pack uuid+type direkt mitliefern (für Auto-Aktivierung)
+    $first  = $results[0];
+    return [
+        'success' => true,
+        'message' => implode(', ', $labels),
+        'uuid'    => $first['uuid'],
+        'type'    => $first['type'],
+        'packs'   => $results,
+    ];
 }
 
-// Durchsucht ein Verzeichnis rekursiv und installiert gefundene Packs (anhand manifest.json)
+// Durchsucht ein Verzeichnis rekursiv und installiert gefundene Packs (anhand manifest.json).
+// $results wird mit Arrays der Form ['name'=>..., 'uuid'=>..., 'type'=>...] befüllt.
 function install_pack_dir(string $dir, array &$results): void {
     $manifest = $dir . '/manifest.json';
     if (file_exists($manifest)) {
@@ -2048,12 +2058,13 @@ function install_pack_dir(string $dir, array &$results): void {
             if (in_array($m['type'], ['data', 'script'])) { $type = 'behavior'; break; }
         }
         $name     = $data['header']['name'] ?? basename($dir);
+        $uuid     = strtolower(trim((string)($data['header']['uuid'] ?? '')));
         $destBase = $type === 'behavior' ? MC_PACKS_BEHAVIOR_DIR : MC_PACKS_RESOURCE_DIR;
         if (!is_dir($destBase)) mkdir($destBase, 0755, true);
         $destPath = $destBase . '/' . sanitize_dirname($name);
         copy_pack_skip_subpacks($dir, $destPath);
         mark_mcadmin_user_pack($destPath);
-        $results[] = "$name ($type pack)";
+        $results[] = ['name' => $name, 'uuid' => $uuid, 'type' => $type];
         return;
     }
     foreach (scandir($dir) as $sub) {

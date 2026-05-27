@@ -597,7 +597,7 @@ async function togglePk(w,u,t,en){const r=await api('toggle_pack',{world:w,uuid:
 // Wechselt zwischen Resource- und Behavior-Pack-Tab
 function switchPkTab(tab,btn){const c=btn.closest('.card');c.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));c.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById('pt-'+(tab==='resource'?'res':'beh')).classList.add('active');}
 // Lädt eine Pack-Datei hoch und installiert sie auf dem Server
-async function uploadPack(inp){const f=inp.files[0];if(!f)return;toast('Installiere Pack...','info');const r=await api('upload_pack',{},{pack:f});toast(r.message||(r.success?'Pack installiert':'Fehler'),r.success?'success':'error');if(r.success)loadAllPacks();inp.value='';}
+async function uploadPack(inp){const f=inp.files[0];if(!f)return;toast('Installiere Pack...','info');const world=document.getElementById('pk-world').value;const r=await api('upload_pack',{world:world},{pack:f});toast(r.message||(r.success?'Pack installiert':'Fehler'),r.success?'success':'error');if(r.success){await loadAllPacks();if(world)await loadWPacks();}inp.value='';}
 // Lädt eine .mcworld-Datei hoch und importiert sie als neue Welt
 async function uploadWorld(inp){const f=inp.files[0];if(!f)return;toast('Importiere Welt...','info');try{const r=await api('upload_world',{},{world:f});toast(r.message||(r.success?'Welt importiert':'Fehler'),r.success?'success':'error');if(r.success)loadWorlds();}catch(err){toast('Upload fehlgeschlagen: '+err.message,'error');}inp.value='';}
 
