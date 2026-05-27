@@ -1869,7 +1869,6 @@ function get_installed_packs(string $type = 'behavior'): array {
                 'dependencies'        => $data['dependencies'] ?? [],
                 'used_by_worlds'      => $usage['used_by_worlds'],
                 'imported_by_worlds'  => $usage['imported_by_worlds'],
-                'user_pack'           => is_mcadmin_user_pack($path),
             ];
         }
     }
@@ -1936,6 +1935,61 @@ function toggle_pack_for_world(string $worldName, string $packUuid, string $pack
     }
 
     return save_state($state);
+}
+
+// Ersetzt eine fehlende Pack-Referenz einer Welt durch ein bereits installiertes Pack.
+// Das ist bewusst ein manueller Reparaturmodus: hilfreich bei Bedrock-Updates, wenn ein Pack
+// denselben Inhalt hat, aber neue UUID/Version im manifest.json besitzt.
+function remap_missing_pack_for_world(string $worldName, string $packType, string $oldUuid, string $newUuid): array {
+    $packType = strtolower($packType);
+    if (!in_array($packType, ['behavior', 'resource'], true)) {
+        return ['success' => false, 'message' => 'Ungültiger Pack-Typ'];
+    }
+    if ($worldName === '' || !preg_match('/^[a-zA-Z0-9_\- ]{1,64}$/', $worldName)) {
+        return ['success' => false, 'message' => 'Ungültiger Weltname'];
+    }
+    if (!preg_match('/^[0-9a-fA-F\-]{36}$/', $oldUuid) || !preg_match('/^[0-9a-fA-F\-]{36}$/', $newUuid)) {
+        return ['success' => false, 'message' => 'Ungültige UUID'];
+    }
+
+    $state = get_state();
+    if (!isset($state['world_packs'][$worldName][$packType]) || !is_array($state['world_packs'][$worldName][$packType])) {
+        return ['success' => false, 'message' => 'Für diese Welt gibt es keine Pack-Liste'];
+    }
+
+    $installed = find_installed_pack($packType, $newUuid);
+    if (!$installed) {
+        return ['success' => false, 'message' => 'Das gewählte Pack ist nicht installiert'];
+    }
+
+    $hadOld = false;
+    foreach ($state['world_packs'][$worldName][$packType] as $entry) {
+        $ref = normalize_pack_ref($entry);
+        if ($ref && strtolower($ref['pack_id']) === strtolower($oldUuid)) {
+            $hadOld = true;
+            break;
+        }
+    }
+    if (!$hadOld) {
+        return ['success' => false, 'message' => 'Die fehlende Pack-Referenz wurde in der Welt nicht gefunden'];
+    }
+
+    // Alte kaputte Referenz entfernen und die gewählte installierte Version eintragen.
+    remove_pack_ref_by_uuid($state['world_packs'][$worldName][$packType], $oldUuid);
+    add_pack_ref($state['world_packs'][$worldName][$packType], $installed['uuid'], $installed['version']);
+    add_pack_dependencies_for_world($state, $worldName, $installed);
+
+    if (!save_state($state)) {
+        return ['success' => false, 'message' => 'State konnte nicht gespeichert werden'];
+    }
+
+    apply_world_packs($worldName);
+
+    return [
+        'success' => true,
+        'message' => 'Pack-Referenz wurde auf "' . ($installed['name'] ?? $installed['uuid']) . '" v' . ($installed['version'] ?? '?') . ' umgestellt',
+        'pack' => $installed,
+    ];
 }
 
 // Schreibt die aktiven Packs einer Welt in die world_*_packs.json-Dateien
@@ -2036,41 +2090,6 @@ function install_pack(string $tmpPath, string $originalName): array {
     exec('rm -rf ' . escapeshellarg($tmpDir));
     if (empty($results)) return ['success' => false, 'message' => 'Kein gültiges Pack gefunden'];
     return ['success' => true, 'message' => implode(', ', $results)];
-}
-
-// Löscht ein selbst installiertes Pack: deaktiviert es in allen Welten, entfernt den Ordner.
-// Schlägt fehl, wenn das Pack kein user-pack ist (Schutz vor Löschen von Bedrock-Systempacks).
-function delete_pack(string $uuid, string $type): array {
-    $dir = $type === 'behavior' ? MC_PACKS_BEHAVIOR_DIR : MC_PACKS_RESOURCE_DIR;
-    if (!is_dir($dir)) return ['success' => false, 'message' => 'Pack-Verzeichnis nicht gefunden'];
-
-    // Pack-Ordner anhand UUID suchen
-    $packPath = null;
-    foreach (scandir($dir) as $d) {
-        if ($d === '.' || $d === '..') continue;
-        $path     = $dir . '/' . $d;
-        $manifest = $path . '/manifest.json';
-        if (!is_dir($path) || !file_exists($manifest)) continue;
-        $data = json_decode(file_get_contents($manifest), true) ?: [];
-        if (strtolower($data['header']['uuid'] ?? '') === strtolower($uuid)) {
-            $packPath = $path;
-            break;
-        }
-    }
-    if (!$packPath) return ['success' => false, 'message' => 'Pack nicht gefunden'];
-    if (!is_mcadmin_user_pack($packPath))
-        return ['success' => false, 'message' => 'Nur selbst installierte Packs können gelöscht werden'];
-
-    // Pack aus allen Welten deaktivieren
-    $state  = get_state();
-    $worlds = array_keys($state['world_packs'] ?? []);
-    foreach ($worlds as $world) {
-        toggle_pack_for_world($world, $uuid, $type, false);
-        apply_world_packs($world);
-    }
-
-    exec('rm -rf ' . escapeshellarg($packPath));
-    return ['success' => true, 'message' => 'Pack gelöscht'];
 }
 
 // Durchsucht ein Verzeichnis rekursiv und installiert gefundene Packs (anhand manifest.json)
