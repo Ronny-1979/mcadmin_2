@@ -410,9 +410,14 @@ async function toggleMissingPanel(worldName){
     }
     panel.innerHTML=`<div>
       <div style="font-weight:600;font-size:13px;margin-bottom:8px">Fehlende Packs:</div>
-      ${missing.map(p=>`<div class="xs2" style="margin-bottom:5px">
-        <span class="badge badge-r">${e(p.type)}</span>
-        <code style="font-size:11px">${e(p.uuid)}</code> · v${e(p.version)}
+      ${missing.map(p=>`<div class="pkc pk-missing" style="margin-bottom:7px">
+        <div class="pki">❓</div>
+        <div style="flex:1;min-width:0">
+          <div class="pkn" style="color:var(--red)">${p.name?e(p.name):'Unbekanntes Pack'}</div>
+          <div class="pkv" style="user-select:all">${e(p.uuid)}</div>
+          <div class="pkv"><span class="badge badge-r" style="margin-right:4px">${e(p.type)}</span>v${e(p.version)} · Nicht installiert</div>
+          ${(p.required_by&&p.required_by.length)?`<div class="pkv" style="color:var(--text2);margin-top:2px">📎 Benötigt von: ${p.required_by.map(n=>e(n)).join(', ')}</div>`:''}
+        </div>
       </div>`).join('')}
       <div class="uz" style="margin-top:10px" onclick="document.getElementById('mpp-up-${e(worldName)}').click()">
         <div class="ui">📦</div>

@@ -1895,6 +1895,23 @@ function find_pack_name_anywhere(string $type, string $uuid): ?string {
     return null;
 }
 
+// Sucht welche installierten Packs die gegebene UUID als Abhängigkeit listen.
+// Gibt Array mit Pack-Namen zurück (leer wenn keiner gefunden).
+function find_packs_requiring_uuid(string $uuid): array {
+    $requiring = [];
+    foreach (['behavior', 'resource'] as $type) {
+        foreach (get_installed_packs($type) as $pack) {
+            foreach ($pack['dependencies'] ?? [] as $dep) {
+                if (strtolower($dep['uuid'] ?? '') === strtolower($uuid)) {
+                    $requiring[] = $pack['name'];
+                    break;
+                }
+            }
+        }
+    }
+    return array_unique($requiring);
+}
+
 // Gibt die aktiven Pack-Referenzen einer Welt zurück, plus fehlende Packs (UUID-Liste)
 function get_world_packs(string $worldName): array {
     $state = get_state();
@@ -1912,9 +1929,10 @@ function get_world_packs(string $worldName): array {
             }
             if (!$installed) {
                 $missing[] = [
-                    'uuid'    => $normRef['pack_id'],
-                    'version' => $normRef['version'] ? implode('.', $normRef['version']) : '?',
-                    'name'    => find_pack_name_anywhere($pt, $normRef['pack_id']),
+                    'uuid'        => $normRef['pack_id'],
+                    'version'     => $normRef['version'] ? implode('.', $normRef['version']) : '?',
+                    'name'        => find_pack_name_anywhere($pt, $normRef['pack_id']),
+                    'required_by' => find_packs_requiring_uuid($normRef['pack_id']),
                 ];
             }
         }
