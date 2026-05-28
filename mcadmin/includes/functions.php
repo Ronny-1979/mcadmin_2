@@ -1897,6 +1897,23 @@ function find_pack_name_anywhere(string $type, string $uuid): ?string {
     return null;
 }
 
+// Sucht den Pack-Namen in den World-History-Dateien (world_*_pack_history.json).
+// Fallback wenn das Pack nicht installiert ist aber die Welt es referenziert hat.
+function find_pack_name_in_history(string $worldName, string $uuid): ?string {
+    $base = MC_WORLDS_DIR . '/' . $worldName;
+    foreach (['world_behavior_pack_history.json', 'world_resource_pack_history.json'] as $file) {
+        $path = $base . '/' . $file;
+        if (!file_exists($path)) continue;
+        $data = json_decode((string)file_get_contents($path), true) ?? [];
+        foreach ($data['packs'] ?? [] as $pack) {
+            if (strtolower($pack['uuid'] ?? '') === strtolower($uuid)) {
+                return $pack['name'] ?? null;
+            }
+        }
+    }
+    return null;
+}
+
 // Sucht welche installierten Packs die gegebene UUID als Abhängigkeit listen.
 // Gibt Array mit Pack-Namen zurück (leer wenn keiner gefunden).
 function find_packs_requiring_uuid(string $uuid): array {
@@ -1933,7 +1950,8 @@ function get_world_packs(string $worldName): array {
                 $missing[] = [
                     'uuid'        => $normRef['pack_id'],
                     'version'     => $normRef['version'] ? implode('.', $normRef['version']) : '?',
-                    'name'        => find_pack_name_anywhere($pt, $normRef['pack_id']),
+                    'name'        => find_pack_name_anywhere($pt, $normRef['pack_id'])
+                                     ?? find_pack_name_in_history($worldName, $normRef['pack_id']),
                     'required_by' => find_packs_requiring_uuid($normRef['pack_id']),
                 ];
             }
