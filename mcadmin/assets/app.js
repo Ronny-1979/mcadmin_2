@@ -386,8 +386,7 @@ async function loadWorlds(){
           ${w.name!==active?`<button class="btn primary xs" onclick="switchW('${e(w.name)}')">▶ Aktivieren</button>`:''}
           <button class="btn ghost xs" onclick="editProps('${e(w.name)}')">⚙️ Einstellungen</button>
           <button class="btn ghost xs" onclick="openRenameModal('${e(w.name)}')">✏️ Umbenennen</button>
-          <button class="btn ghost xs" onclick="document.getElementById('wld-pk-${e(w.name)}').click()">📦 Pack hochladen</button>
-          <input type="file" id="wld-pk-${e(w.name)}" accept=".mcpack,.mcaddon,.zip" style="display:none" onchange="uploadPackForWorld(this,'${e(w.name)}')">
+          ${w.name!==active?`<button class="btn ghost xs" onclick="document.getElementById('wld-pk-${e(w.name)}').click()">📦 Pack hochladen</button><input type="file" id="wld-pk-${e(w.name)}" accept=".mcpack,.mcaddon,.zip" style="display:none" onchange="uploadPackForWorld(this,'${e(w.name)}')">`:``}
           ${w.name!==active?`<button class="btn danger xs" onclick="delWorld('${e(w.name)}')">🗑 Löschen</button>`:''}
         </div>
       </div>
