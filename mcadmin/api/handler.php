@@ -173,6 +173,14 @@ try {
                 echo json_encode(['success'=>false,'message'=>'Upload fehlgeschlagen']); break;
             }
             echo json_encode(install_pack_for_world($_FILES['pack']['tmp_name'], $_FILES['pack']['name'], $world)); break;
+        case 'remove_pack_from_world': // Entfernt ein Pack aus einer Welt (ohne es zu löschen)
+            $world = $_POST['world'] ?? '';
+            $uuid  = strtolower($_POST['uuid'] ?? '');
+            $type  = $_POST['type'] ?? '';
+            if (!preg_match('/^[a-zA-Z0-9_\- ]{1,64}$/', $world)) { echo json_encode(['success'=>false,'message'=>'Ungültiger Weltname']); break; }
+            if (!preg_match('/^[a-f0-9\-]{36}$/', $uuid))          { echo json_encode(['success'=>false,'message'=>'Ungültige UUID']); break; }
+            if (!in_array($type, ['behavior','resource']))          { echo json_encode(['success'=>false,'message'=>'Ungültiger Typ']); break; }
+            echo json_encode(remove_pack_from_world($world, $uuid, $type)); break;
         case 'delete_pack':     // Löscht ein selbst installiertes Pack und entfernt es aus allen Welten
             $uuid = $_POST['uuid'] ?? '';
             $type = $_POST['type'] ?? '';
