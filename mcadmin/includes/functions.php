@@ -1146,6 +1146,7 @@ function get_worlds(): array {
                         $found = true; break;
                     }
                 }
+                if (($normRef['enabled'] ?? true) === false) continue;
                 if (!$found) $missingCount++;
             }
         }
@@ -1682,12 +1683,13 @@ function pack_version_string($version): string {
     return implode('.', pack_version_array($version));
 }
 
-// Normalisiert eine Pack-Referenz (UUID-String oder Array) zu {pack_id, version}
+// Normalisiert eine Pack-Referenz (UUID-String oder Array) zu {pack_id, version, enabled}
 function normalize_pack_ref($entry): ?array {
     if (is_string($entry)) {
         return [
             'pack_id' => $entry,
             'version' => null,
+            'enabled' => true,
         ];
     }
 
@@ -1698,6 +1700,8 @@ function normalize_pack_ref($entry): ?array {
         return [
             'pack_id' => $uuid,
             'version' => array_key_exists('version', $entry) ? pack_version_array($entry['version']) : null,
+            // Alte States hatten kein enabled-Feld. Diese gelten weiterhin als aktiv.
+            'enabled' => array_key_exists('enabled', $entry) ? (bool)$entry['enabled'] : true,
         ];
     }
 
@@ -1719,20 +1723,48 @@ function pack_ref_matches_exact($entry, string $uuid, $version): bool {
     return $ref['version'] === pack_version_array($version);
 }
 
-// Fügt eine Pack-Referenz zur Liste hinzu, wenn sie noch nicht vorhanden ist
-function add_pack_ref(array &$list, string $uuid, $version): void {
+// Fügt eine Pack-Referenz zur Liste hinzu oder aktiviert eine vorhandene Referenz wieder.
+function add_pack_ref(array &$list, string $uuid, $version, bool $enabled = true): void {
     $ref = [
         'pack_id' => $uuid,
         'version' => pack_version_array($version),
+        'enabled' => $enabled,
     ];
 
-    foreach ($list as $existing) {
+    foreach ($list as &$existing) {
         if (pack_ref_matches_exact($existing, $uuid, $ref['version'])) {
+            if (is_array($existing)) {
+                $existing['enabled'] = $enabled;
+            } else {
+                $existing = $ref;
+            }
+            unset($existing);
             return;
         }
     }
+    unset($existing);
 
     $list[] = $ref;
+}
+
+// Setzt aktiv/deaktiviert, ohne die Welt-Zuordnung zu verlieren.
+function set_pack_ref_enabled(array &$list, string $uuid, bool $enabled, $version = null): bool {
+    $changed = false;
+    foreach ($list as &$entry) {
+        if (!pack_ref_matches_uuid($entry, $uuid)) continue;
+
+        $ref = normalize_pack_ref($entry);
+        if ($ref === null) continue;
+
+        $entry = [
+            'pack_id' => $ref['pack_id'],
+            'version' => $ref['version'] !== null ? $ref['version'] : pack_version_array($version ?? [0, 0, 0]),
+            'enabled' => $enabled,
+        ];
+        $changed = true;
+    }
+    unset($entry);
+    return $changed;
 }
 
 // Entfernt alle Einträge mit einer bestimmten UUID aus einer Pack-Referenzliste
@@ -1946,6 +1978,7 @@ function get_world_packs(string $worldName): array {
             if (!$installed && $normRef['version'] === null) {
                 $installed = find_installed_pack($pt, $normRef['pack_id']);
             }
+            if (($normRef['enabled'] ?? true) === false) continue;
             if (!$installed) {
                 $missing[] = [
                     'uuid'        => $normRef['pack_id'],
@@ -1989,9 +2022,35 @@ function toggle_pack_for_world(string $worldName, string $packUuid, string $pack
 
         add_pack_dependencies_for_world($state, $worldName, $pack);
     } else {
-        remove_pack_ref_by_uuid($state['world_packs'][$worldName][$packType], $packUuid);
+        $pack = find_installed_pack($packType, $packUuid);
+        if (!set_pack_ref_enabled(
+            $state['world_packs'][$worldName][$packType],
+            $packUuid,
+            false,
+            $pack['version'] ?? [0, 0, 0]
+        )) {
+            // Falls der Eintrag aus irgendeinem Grund noch nicht im State stand,
+            // trotzdem als deaktivierte Welt-Zuordnung merken.
+            if ($pack) {
+                add_pack_ref($state['world_packs'][$worldName][$packType], $pack['uuid'], $pack['version'], false);
+            } else {
+                add_pack_ref($state['world_packs'][$worldName][$packType], $packUuid, [0, 0, 0], false);
+            }
+        }
     }
 
+    return save_state($state);
+}
+
+// Entfernt eine Pack-Zuordnung wirklich aus einer Welt. Nur für Lösch-/Aufräum-Aktionen nutzen.
+function remove_pack_from_world(string $worldName, string $packUuid, string $packType): bool {
+    $state = get_state();
+
+    if (!isset($state['world_packs'][$worldName][$packType])) {
+        return save_state($state);
+    }
+
+    remove_pack_ref_by_uuid($state['world_packs'][$worldName][$packType], $packUuid);
     return save_state($state);
 }
 
@@ -2008,6 +2067,8 @@ function apply_world_packs(string $worldName): void {
         foreach (($packs[$type] ?? []) as $entry) {
             $ref = normalize_pack_ref($entry);
             if ($ref === null) continue;
+
+            if (($ref['enabled'] ?? true) === false) continue;
 
             $uuid    = $ref['pack_id'];
             $version = $ref['version'];
@@ -2138,7 +2199,7 @@ function delete_pack(string $uuid, string $type): array {
     $state  = get_state();
     $worlds = array_keys($state['world_packs'] ?? []);
     foreach ($worlds as $world) {
-        toggle_pack_for_world($world, $uuid, $type, false);
+        remove_pack_from_world($world, $uuid, $type);
         apply_world_packs($world);
     }
 
