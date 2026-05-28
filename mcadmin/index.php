@@ -208,7 +208,12 @@ try {
   <nav class="sidebar" id="sidebar">
     <div class="slogo">
       <div class="slogo-i"><svg width="28" height="28" style="image-rendering:pixelated"><use href="#mc-grass"/></svg></div>
-      <div><div class="slogo-t">MC Bedrock</div><div class="slogo-s">Admin Panel</div></div>
+      <div class="slogo-info">
+        <div class="slogo-t">MC Bedrock</div>
+        <div class="slogo-s">Admin Panel</div>
+        <button type="button" id="side-mc-version" class="slogo-ver" onclick="openUpdatesPage()" title="Minecraft-Update-Seite öffnen">MC: ...</button>
+        <button type="button" id="side-panel-version" class="slogo-ver" onclick="openUpdatesPage()" title="Panel-Update-Seite öffnen">Panel: ...</button>
+      </div>
     </div>
     <div class="snav">
       <div class="ns">Dashboard</div>
