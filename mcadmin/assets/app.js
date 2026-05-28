@@ -386,6 +386,8 @@ async function loadWorlds(){
           ${w.name!==active?`<button class="btn primary xs" onclick="switchW('${e(w.name)}')">▶ Aktivieren</button>`:''}
           <button class="btn ghost xs" onclick="editProps('${e(w.name)}')">⚙️ Einstellungen</button>
           <button class="btn ghost xs" onclick="openRenameModal('${e(w.name)}')">✏️ Umbenennen</button>
+          <button class="btn ghost xs" onclick="document.getElementById('wld-pk-${e(w.name)}').click()">📦 Pack hochladen</button>
+          <input type="file" id="wld-pk-${e(w.name)}" accept=".mcpack,.mcaddon,.zip" style="display:none" onchange="uploadPackForWorld(this,'${e(w.name)}')">
           ${w.name!==active?`<button class="btn danger xs" onclick="delWorld('${e(w.name)}')">🗑 Löschen</button>`:''}
         </div>
       </div>
@@ -572,7 +574,10 @@ function renderPacks(){
     const missing=G.wPacks[t+'_missing']||[];
     const el=document.getElementById((t==='resource'?'res':'beh')+'-list');
 
-    const packs=allPacks;
+    const packs=world
+      ? allPacks.filter(p=>(p.used_by_worlds||[]).includes(world)||(p.imported_by_worlds||[]).includes(world))
+      : allPacks;
+    const worldBadges=p=>{const ws=[...(p.used_by_worlds||[]),...(p.imported_by_worlds||[])];const u=[...new Set(ws)];return u.length?`<div class="pkv" style="margin-top:2px">${u.map(w=>`<span class="badge badge-g" style="font-size:9px;margin-right:3px">${e(w)}</span>`).join('')}</div>`:''};
 
     const subtypeBadge=s=>({script:'<span class="badge badge-o">Script</span>',data:'<span class="badge badge-d">Behavior</span>',resources:'<span class="badge badge-b">Resource</span>'}[s]||'');
     const icon=p=>p.subtype==='script'?'📜':(t==='resource'?'🎨':'⚙️');
@@ -581,7 +586,7 @@ function renderPacks(){
     if(packs.length){
       html+=packs.map(p=>{
         const en=active.some(a=>(typeof a==='string'?a:a.pack_id)===p.uuid);
-        return`<div class="pkc"><div class="pki">${icon(p)}</div><div style="flex:1;min-width:0"><div class="pkn">${e(p.name)}</div><div class="pkd">${e(p.description||'—')}</div><div class="pkv">v${e(p.version)} ${subtypeBadge(p.subtype)}</div></div><label class="tgl"><input type="checkbox" ${en?'checked':''} ${!world?'disabled':''} onchange="togglePk('${e(world)}','${e(p.uuid)}','${t}',this.checked)"><span class="tsl"></span></label>${p.user_pack?`<button class="icon-btn" title="Pack löschen" onclick="deletePack('${e(p.uuid)}','${t}','${e(p.name)}')">🗑</button>`:''}</div>`;
+        return`<div class="pkc"><div class="pki">${icon(p)}</div><div style="flex:1;min-width:0"><div class="pkn">${e(p.name)}</div><div class="pkd">${e(p.description||'—')}</div><div class="pkv">v${e(p.version)} ${subtypeBadge(p.subtype)}</div>${worldBadges(p)}</div><label class="tgl"><input type="checkbox" ${en?'checked':''} ${!world?'disabled':''} onchange="togglePk('${e(world)}','${e(p.uuid)}','${t}',this.checked)"><span class="tsl"></span></label>${p.user_pack?`<button class="icon-btn" title="Pack löschen" onclick="deletePack('${e(p.uuid)}','${t}','${e(p.name)}')">🗑</button>`:''}</div>`;
       }).join('');
     }
     // Fehlende Packs (UUID vorhanden, aber nicht installiert)
@@ -590,7 +595,7 @@ function renderPacks(){
       html+=missing.map(mp=>`<div class="pkc pk-missing"><div class="pki">❓</div><div style="flex:1;min-width:0"><div class="pkn" style="color:var(--red)">${mp.name?e(mp.name):'Unbekanntes Pack'}</div><div class="pkv" style="user-select:all">${e(mp.uuid)}</div><div class="pkv">v${e(mp.version)} · Nicht installiert</div>${(mp.required_by&&mp.required_by.length)?`<div class="pkv" style="color:var(--text2);margin-top:2px">📎 Benötigt von: ${mp.required_by.map(n=>e(n)).join(', ')}</div>`:''}</div><span class="badge badge-r" style="flex-shrink:0">Fehlt</span><button class="icon-btn" title="Referenz entfernen" onclick="removeMissingRef('${e(world)}','${e(mp.uuid)}','${t}')">✕</button></div>`).join('');
     }
     if(!html){
-      html=`<div class="dim xs2" style="text-align:center;padding:18px">Keine Packs installiert</div>`;
+      html=`<div class="dim xs2" style="text-align:center;padding:18px">${world?'Keine Packs für diese Welt':'Keine Packs installiert'}</div>`;
     }
     el.innerHTML=html;
   });
@@ -605,6 +610,8 @@ async function removeMissingRef(world,uuid,type){if(!confirm('Gebrochene Pack-Re
 function switchPkTab(tab,btn){const c=btn.closest('.card');c.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));c.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById('pt-'+(tab==='resource'?'res':'beh')).classList.add('active');}
 // Lädt eine Pack-Datei hoch und installiert sie auf dem Server
 async function uploadPack(inp){const f=inp.files[0];if(!f)return;toast('Installiere Pack...','info');const r=await api('upload_pack',{},{pack:f});toast(r.message||(r.success?'Pack installiert':'Fehler'),r.success?'success':'error');if(r.success){await loadAllPacks();const w=document.getElementById('pk-world').value;if(w)await loadWPacks();}inp.value='';}
+// Lädt ein Pack für eine bestimmte Welt hoch, installiert und aktiviert es direkt
+async function uploadPackForWorld(inp,world){const f=inp.files[0];if(!f)return;toast('Installiere Pack für '+world+'...','info');const r=await api('upload_pack_for_world',{world},{pack:f});toast(r.message||(r.success?'Pack installiert und aktiviert':'Fehler'),r.success?'success':'error');if(r.success)await loadWorlds();inp.value='';}
 // Lädt eine .mcworld-Datei hoch und importiert sie als neue Welt
 async function uploadWorld(inp){const f=inp.files[0];if(!f)return;toast('Importiere Welt...','info');try{const r=await api('upload_world',{},{world:f});toast(r.message||(r.success?'Welt importiert':'Fehler'),r.success?'success':'error');if(r.success)loadWorlds();}catch(err){toast('Upload fehlgeschlagen: '+err.message,'error');}inp.value='';}
 

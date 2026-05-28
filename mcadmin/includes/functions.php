@@ -2092,7 +2092,23 @@ function install_pack(string $tmpPath, string $originalName): array {
     install_pack_dir($tmpDir, $results);
     exec('rm -rf ' . escapeshellarg($tmpDir));
     if (empty($results)) return ['success' => false, 'message' => 'Kein gültiges Pack gefunden'];
-    return ['success' => true, 'message' => implode(', ', $results)];
+    $msg = implode(', ', array_map(fn($r) => "{$r['name']} ({$r['type']} pack)", $results));
+    return ['success' => true, 'message' => $msg, 'installed' => $results];
+}
+
+// Installiert ein Pack und aktiviert es sofort für eine bestimmte Welt
+function install_pack_for_world(string $tmpPath, string $originalName, string $worldName): array {
+    $r = install_pack($tmpPath, $originalName);
+    if (!$r['success']) return $r;
+    $activated = 0;
+    foreach ($r['installed'] as $pack) {
+        if (!empty($pack['uuid']) && toggle_pack_for_world($worldName, $pack['uuid'], $pack['type'], true)) {
+            $activated++;
+        }
+    }
+    if ($activated > 0) apply_world_packs($worldName);
+    $count = count($r['installed']);
+    return ['success' => true, 'message' => "$count Pack(s) installiert und für '$worldName' aktiviert"];
 }
 
 // Löscht ein selbst installiertes Pack: deaktiviert es in allen Welten, entfernt den Ordner.
@@ -2158,7 +2174,7 @@ function install_pack_dir(string $dir, array &$results): void {
         $destPath = $destBase . '/' . sanitize_dirname($name);
         copy_pack_skip_subpacks($dir, $destPath);
         mark_mcadmin_user_pack($destPath);
-        $results[] = "$name ($type pack)";
+        $results[] = ['name' => $name, 'type' => $type, 'uuid' => strtolower($data['header']['uuid'] ?? '')];
         return;
     }
     foreach (scandir($dir) as $sub) {
