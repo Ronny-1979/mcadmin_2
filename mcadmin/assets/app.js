@@ -84,15 +84,13 @@ function showPage(page,el){
 async function refreshStatus(){
   try{
     const s=await api('status');G.srv=s;
-    const tb=document.getElementById('tb-status');
-    const ds=document.getElementById('d-status');
-    if(s.running){tb.className='sb on';tb.innerHTML='<span class="dot"></span> Online';if(ds)ds.innerHTML='<span class="tg">Online</span>';}
-    else{tb.className='sb off';tb.innerHTML='<span class="dot"></span> Offline';if(ds)ds.innerHTML='<span class="tr">Offline</span>';}
-    const dv=document.getElementById('d-ver');if(dv)dv.textContent='v'+(s.version||'?');
+    const tb=document.getElementById('tb-status');const ds=document.getElementById('d-status');
+    if(s.running){tb.className='sb on';tb.innerHTML='<span class="dot"></span> Online';ds.innerHTML='<span class="tg">Online</span>';}
+    else{tb.className='sb off';tb.innerHTML='<span class="dot"></span> Offline';ds.innerHTML='<span class="tr">Offline</span>';}
+    document.getElementById('d-ver').textContent='v'+(s.version||'?');
     const upEl=document.getElementById('d-uptime');if(upEl)upEl.textContent=s.uptime?'⏱ '+s.uptime:'';
-    const utEl=document.getElementById('tb-uptime');if(utEl)utEl.textContent=s.running&&s.uptime?s.uptime:'';
-    const dw=document.getElementById('d-world');if(dw)dw.textContent=s.active_world||'keine';
-    const dp=document.getElementById('d-players');if(dp)dp.textContent=s.players.length;
+    document.getElementById('d-world').textContent=s.active_world||'keine';
+    document.getElementById('d-players').textContent=s.players.length;
     document.getElementById('d-pcnt').textContent=s.players.length+' online';
     document.getElementById('tb-world').textContent=s.active_world?'🌍 '+s.active_world:'';
     renderPlayers(s.players);
@@ -239,22 +237,18 @@ document.addEventListener('DOMContentLoaded',()=>{
 // ═══ VERSION / UPDATE ══════════════════════════════════════
 // Prüft installierte und neueste Server-Version und aktualisiert die Update-Seite
 async function checkVer(){
-  const vCur=document.getElementById('v-cur');const vLat=document.getElementById('v-lat');
-  if(vCur)vCur.textContent='...';if(vLat)vLat.textContent='...';
+  document.getElementById('v-cur').textContent='...';document.getElementById('v-lat').textContent='...';
   try{
     const[info,inst]=await Promise.all([api('check_version'),api('server_installed')]);
     G.ver=info;
-    if(vCur)vCur.textContent=info.current||'n/a';
-    if(vLat)vLat.textContent=info.latest||'n/a';
+    document.getElementById('v-cur').textContent=info.current||'n/a';
+    document.getElementById('v-lat').textContent=info.latest||'n/a';
     const btn=document.getElementById('btn-upd');const ub=document.getElementById('mc-ub');
     if(ub)ub.style.display='';
-    if(btn){
-      if(!inst.installed){btn.disabled=false;btn.textContent=`⬇ Bedrock ${e(info.latest)} installieren`;btn.className='btn success';if(ub)ub.innerHTML=`<div class="ub good" style="margin:0"><div>📦</div><div><strong class="tg">Noch nicht installiert</strong><br><span class="dim xs2">Version ${e(info.latest)} wird von Mojang heruntergeladen.</span></div></div>`;}
-      else if(info.update_available){btn.disabled=false;btn.textContent=`⬆ Update auf ${e(info.latest)}`;btn.className='btn warn';if(ub)ub.innerHTML=`<div class="ub" style="margin:0"><div>🔔</div><div><strong>Update verfügbar!</strong><br><span class="dim xs2">Backup wird vor dem Update automatisch erstellt.</span></div></div>`;}
-      else{btn.disabled=true;btn.textContent='✓ Aktuell';btn.className='btn ghost';if(ub)ub.innerHTML=`<div class="ub good" style="margin:0"><div>✅</div><div><strong class="tg">Aktuell!</strong> Neueste Version installiert.</div></div>`;}
-    }
-    updateSidebarVer();
-  }catch(err){/* silent on startup call */}
+    if(!inst.installed){btn.disabled=false;btn.textContent=`⬇ Bedrock ${e(info.latest)} installieren`;btn.className='btn success';if(ub)ub.innerHTML=`<div class="ub good" style="margin:0"><div>📦</div><div><strong class="tg">Noch nicht installiert</strong><br><span class="dim xs2">Version ${e(info.latest)} wird von Mojang heruntergeladen.</span></div></div>`;}
+    else if(info.update_available){btn.disabled=false;btn.textContent=`⬆ Update auf ${e(info.latest)}`;btn.className='btn warn';if(ub)ub.innerHTML=`<div class="ub" style="margin:0"><div>🔔</div><div><strong>Update verfügbar!</strong><br><span class="dim xs2">Backup wird vor dem Update automatisch erstellt.</span></div></div>`;}
+    else{btn.disabled=true;btn.textContent='✓ Aktuell';btn.className='btn ghost';if(ub)ub.innerHTML=`<div class="ub good" style="margin:0"><div>✅</div><div><strong class="tg">Aktuell!</strong> Neueste Version installiert.</div></div>`;}
+  }catch(err){toast('Versions-Check fehlgeschlagen','error');}
 }
 let updTimer=null;
 // Fügt einen Schritt-Eintrag in das Update-Log-Panel ein oder aktualisiert ihn
@@ -393,10 +387,8 @@ async function loadWorlds(){
           <button class="btn ghost xs" onclick="editProps('${e(w.name)}')">⚙️ Einstellungen</button>
           ${!(w.name===active&&G.srv.running)?`<button class="btn ghost xs" onclick="openRenameModal('${e(w.name)}')">✏️ Umbenennen</button>`:''}
           ${!(w.name===active&&G.srv.running)?`<button class="btn ghost xs" onclick="document.getElementById('wld-pk-${e(w.name)}').click()">📦 Pack hochladen</button><input type="file" id="wld-pk-${e(w.name)}" accept=".mcpack,.mcaddon,.zip" style="display:none" onchange="uploadPackForWorld(this,'${e(w.name)}')">`:``}
-          <button class="btn ghost xs" onclick="toggleInstalledPanel('${e(w.name)}')">📦 ${w.pack_count||0} Packs</button>
           ${!(w.name===active&&G.srv.running)?`<button class="btn danger xs" onclick="delWorld('${e(w.name)}')">🗑 Löschen</button>`:''}
         </div>
-        <div class="wip hidden" id="wip-${e(w.name)}"></div>
       </div>
       ${w.missing_packs_count>0?`<div class="miss-panel hidden" id="mpp-${e(w.name)}"></div>`:''}
     </div>`).join('');
@@ -441,40 +433,6 @@ async function toggleMissingPanel(worldName){
   }catch(err){
     panel.innerHTML='<div class="dim xs2" style="padding:6px 0">❌ Fehler beim Laden.</div>';
   }
-}
-// Öffnet/schließt das Panel mit allen installierten Packs einer Welt
-async function toggleInstalledPanel(worldName){
-  const panel=document.getElementById('wip-'+worldName);
-  if(!panel)return;
-  if(!panel.classList.contains('hidden')){panel.classList.add('hidden');return;}
-  panel.classList.remove('hidden');
-  panel.innerHTML='<div class="dim xs2" style="padding:6px 0"><span class="spin">⟳</span> Lade...</div>';
-  try{
-    const data=await api('get_world_packs',{world:worldName});
-    const installed=[...(data.behavior||[]).map(p=>({...p,type:'behavior'})),
-                     ...(data.resource||[]).map(p=>({...p,type:'resource'}))];
-    if(!installed.length){panel.innerHTML='<div class="dim xs2" style="padding:6px 0">Keine Packs in dieser Welt.</div>';return;}
-    panel.innerHTML=`<div style="margin-top:8px">
-      <div style="font-weight:600;font-size:13px;margin-bottom:8px">Installierte Packs (${installed.length}):</div>
-      ${installed.map(p=>`<div class="pkc">
-        <div class="pki">${p.type==='behavior'?'⚙️':'🎨'}</div>
-        <div style="flex:1;min-width:0">
-          <div class="pkn">${e(p.name)}</div>
-          <div class="pkv"><span class="badge badge-${p.type==='behavior'?'b':'p'}">${p.type==='behavior'?'Behavior':'Resource'}</span> v${e(p.version)}</div>
-        </div>
-        <button class="icon-btn" title="Aus Welt entfernen" onclick="removePackFromWorld('${e(worldName)}','${e(p.uuid)}','${e(p.type)}','${e(p.name)}')">✕</button>
-      </div>`).join('')}
-    </div>`;
-  }catch(err){panel.innerHTML='<div class="dim xs2" style="padding:6px 0">❌ Fehler beim Laden.</div>';}
-}
-// Entfernt ein Pack aus einer Welt und aktualisiert die Welten-Liste
-async function removePackFromWorld(worldName,uuid,type,name){
-  if(!confirm('Pack "'+name+'" aus dieser Welt entfernen?'))return;
-  try{
-    await api('remove_pack_from_world',{world:worldName,uuid:uuid,type:type});
-    toast(name+' entfernt','success');
-    loadWorlds();
-  }catch(err){toast('Fehler beim Entfernen','error');}
 }
 // Lädt ein fehlendes Pack hoch, installiert es und repariert die Welt-Referenz
 async function supplyMissingPack(worldName,inp){
@@ -626,7 +584,7 @@ function renderPacks(){
     let html='';
     if(packs.length){
       html+=packs.map(p=>{
-        const en=active.some(a=>(typeof a==='string'?a:(a.pack_id??a.uuid))===p.uuid);
+        const en=active.some(a=>(typeof a==='string'?a:a.pack_id)===p.uuid);
         return`<div class="pkc"><div class="pki">${icon(p)}</div><div style="flex:1;min-width:0"><div class="pkn">${e(p.name)}</div><div class="pkd">${e(p.description||'—')}</div><div class="pkv">v${e(p.version)} ${subtypeBadge(p.subtype)}</div>${worldBadges(p)}</div><label class="tgl"><input type="checkbox" ${en?'checked':''} ${!world?'disabled':''} onchange="togglePk('${e(world)}','${e(p.uuid)}','${t}',this.checked)"><span class="tsl"></span></label>${p.user_pack?`<button class="icon-btn" title="Pack löschen" onclick="deletePack('${e(p.uuid)}','${t}','${e(p.name)}')">🗑</button>`:''}</div>`;
       }).join('');
     }
@@ -776,21 +734,7 @@ async function checkPanelUpdate(force){
       ubHtml=`<div class="ub good" style="margin:0"><div>✅</div><div><strong class="tg">Aktuell!</strong> Panel ist auf dem neuesten Stand.</div></div>`;
     }
     if(ub&&ubHtml){ub.innerHTML=ubHtml;ub.style.display='';}
-    G.pver={current:r.current,update_available:r.update_available};
-    updateSidebarVer();
   }catch(err){if(log)log.innerHTML='<span class="dim">Prüfung fehlgeschlagen</span>';}
-}
-function updateSidebarVer(){
-  const mc=document.getElementById('sver-mc');
-  const pan=document.getElementById('sver-panel');
-  if(mc&&G.ver){
-    if(G.ver.update_available){mc.innerHTML=`<a href="#" class="ver-link" onclick="showPage('settings',document.querySelector('[onclick*=settings]'));return false;">MC v${e(G.ver.current)} ↑</a>`;}
-    else{mc.textContent=G.ver.current?'MC v'+G.ver.current:'';}
-  }
-  if(pan&&G.pver){
-    if(G.pver.update_available){pan.innerHTML=`<a href="#" class="ver-link" onclick="showPage('settings',document.querySelector('[onclick*=settings]'));return false;">Panel v${e(G.pver.current)} ↑</a>`;}
-    else{pan.textContent=G.pver.current?'Panel v'+G.pver.current:'';}
-  }
 }
 let panelUpdTimer=null;
 // Startet das Panel-Update nach Bestätigung und pollt den Fortschritt
@@ -930,6 +874,4 @@ function e(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
   setupDrop('bk-drop','bk-imp',importBk);
   setupDrop('pk-drop','pk-file',uploadPack);
   setupDrop('wld-drop','wld-file',uploadWorld);
-  checkVer().catch(()=>{});
-  checkPanelUpdate(false).catch(()=>{});
 })();
