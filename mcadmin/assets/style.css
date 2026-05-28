@@ -33,7 +33,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .layout{display:flex;min-height:100vh}
 .sidebar{width:220px;background:#2a2a2a;border-right:3px solid #111;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
 .slogo{padding:14px 12px 12px;background:#3a2810;border-bottom:3px solid #1a1005;display:flex;align-items:center;gap:10px}
-.slogo-i{font-size:26px}.slogo-t{font-size:9px;font-weight:700;line-height:1.5;font-family:'Press Start 2P',monospace;color:#f0f0f0;text-shadow:1px 1px #000}.slogo-s{color:#c8a068;font-size:10px}
+.slogo-i{font-size:26px;flex-shrink:0}.slogo-info{min-width:0;flex:1}.slogo-t{font-size:9px;font-weight:700;line-height:1.5;font-family:'Press Start 2P',monospace;color:#f0f0f0;text-shadow:1px 1px #000}.slogo-s{color:#c8a068;font-size:10px;margin-bottom:3px}.slogo-ver{display:block;width:100%;background:transparent;border:0;color:#cfcfcf;text-align:left;font-size:9.5px;line-height:1.25;padding:1px 0;cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.slogo-ver.update{color:var(--yellow);cursor:pointer;text-decoration:underline;text-underline-offset:2px}.slogo-ver.update:hover{filter:brightness(1.25)}
 .snav{flex:1;padding:6px 4px;overflow-y:auto}
 .ns{color:#888;font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:10px 8px 4px;font-family:'Press Start 2P',monospace}
 .ni{display:flex;align-items:center;gap:9px;padding:7px 10px;color:var(--text2);cursor:pointer;transition:background .1s,color .1s;font-size:12px;user-select:none;margin-bottom:1px;border-left:3px solid transparent}
@@ -333,6 +333,8 @@ html[data-theme="light"] .sidebar{background:#dfe5ea;border-right-color:#9aa6b2}
 html[data-theme="light"] .slogo{background:#d7c9ad;border-bottom-color:#ad9871}
 html[data-theme="light"] .slogo-t{color:#17212b;text-shadow:1px 1px rgba(255,255,255,.65)}
 html[data-theme="light"] .slogo-s{color:#73562c}
+html[data-theme="light"] .slogo-ver{color:#4b5563}
+html[data-theme="light"] .slogo-ver.update{color:#b45309}
 html[data-theme="light"] .ns{color:#65717f}
 html[data-theme="light"] .ni{color:#33404d}
 html[data-theme="light"] .ni:hover{background:#cfd8e1;color:#101820;border-left-color:#778594}
