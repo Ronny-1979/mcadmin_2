@@ -208,7 +208,7 @@ try {
   <nav class="sidebar" id="sidebar">
     <div class="slogo">
       <div class="slogo-i"><svg width="28" height="28" style="image-rendering:pixelated"><use href="#mc-grass"/></svg></div>
-      <div><div class="slogo-t">MC Bedrock</div><div class="slogo-s">Admin Panel</div><div id="sver-mc" class="dim xs2" style="margin-top:2px;line-height:1.4"></div><div id="sver-panel" class="dim xs2" style="line-height:1.4"></div></div>
+      <div><div class="slogo-t">MC Bedrock</div><div class="slogo-s">Admin Panel</div></div>
     </div>
     <div class="snav">
       <div class="ns">Dashboard</div>
@@ -242,12 +242,11 @@ try {
       <div class="fx ac g8">
         <?php if($default_creds): ?><span class="badge badge-y" onclick="showPage('settings',document.querySelector('[onclick*=settings]'))" style="cursor:pointer">⚠️ Standard-Passwort</span><?php endif; ?>
         <span id="tb-status" class="sb off"><span class="dot"></span> Offline</span>
-        <span id="tb-uptime" class="dim xs2" style="margin-left:6px"></span>
         <button id="theme-toggle" class="btn ghost sm theme-toggle" onclick="toggleTheme()" title="Hell/Dunkel wechseln" aria-label="Hell/Dunkel wechseln">🌙</button>
       </div>
     </div>
     <div class="topbar2">
-      <span id="tb-world" class="tb-wn"></span>
+      <span id="tb-world" class="dim xs2"></span>
       <div class="fx ac g6">
         <button class="btn success sm" onclick="srvAction('start')">▶ Start</button>
         <button class="btn danger sm" onclick="srvAction('stop')">⏹ Stop</button>
@@ -265,6 +264,19 @@ try {
         <a href="#" onclick="showPage('settings',document.querySelector('[onclick*=settings]'));return false;" style="color:var(--yellow);margin-left:6px">Jetzt ändern →</a></div>
       </div>
       <?php endif; ?>
+      <div class="g4 mb14">
+        <div class="stat"><div class="sl">Status</div><div class="sv" id="d-status">—</div><div class="dim xs2" id="d-ver" style="margin-top:3px">Lade...</div><div class="dim xs2" id="d-uptime" style="margin-top:2px"></div></div>
+        <div class="stat"><div class="sl">Aktive Welt</div><div class="sv" id="d-world" style="font-size:14px;margin-top:3px">—</div></div>
+        <div class="stat"><div class="sl">Spieler Online</div><div class="sv" id="d-players">0</div></div>
+        <div class="stat">
+          <div class="sl">Steuerung</div>
+          <div class="fx g6" style="margin-top:7px">
+            <button class="btn success sm" onclick="srvAction('start')">▶ Start</button>
+            <button class="btn danger sm" onclick="srvAction('stop')">⏹ Stop</button>
+            <button class="btn warn sm" onclick="srvAction('restart')">↺ Restart</button>
+          </div>
+        </div>
+      </div>
       <div class="card">
         <div class="ch"><div class="ct">👥 Online Spieler</div><span id="d-pcnt" class="dim xs2">0 online</span></div>
         <div class="cb" id="d-plist"><div class="dim xs2" style="text-align:center;padding:18px">Keine Spieler online</div></div>
