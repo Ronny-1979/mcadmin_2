@@ -240,10 +240,17 @@ try {
         <span class="pt" id="page-title">Übersicht</span>
       </div>
       <div class="fx ac g8">
-        <button id="theme-toggle" class="btn ghost sm theme-toggle" onclick="toggleTheme()" title="Hell/Dunkel wechseln" aria-label="Hell/Dunkel wechseln">🌙</button>
         <?php if($default_creds): ?><span class="badge badge-y" onclick="showPage('settings',document.querySelector('[onclick*=settings]'))" style="cursor:pointer">⚠️ Standard-Passwort</span><?php endif; ?>
-        <span id="tb-world" class="dim xs2"></span>
         <span id="tb-status" class="sb off"><span class="dot"></span> Offline</span>
+        <button id="theme-toggle" class="btn ghost sm theme-toggle" onclick="toggleTheme()" title="Hell/Dunkel wechseln" aria-label="Hell/Dunkel wechseln">🌙</button>
+      </div>
+    </div>
+    <div class="topbar2">
+      <span id="tb-world" class="dim xs2"></span>
+      <div class="fx ac g6">
+        <button class="btn success sm" onclick="srvAction('start')">▶ Start</button>
+        <button class="btn danger sm" onclick="srvAction('stop')">⏹ Stop</button>
+        <button class="btn warn sm" onclick="srvAction('restart')">↺ Restart</button>
       </div>
     </div>
     <div class="content">
@@ -348,16 +355,6 @@ try {
 
     <!-- ═══ PACKS ═══ -->
     <div id="page-packs" class="pc2 hidden">
-      <div class="card">
-        <div class="ch"><div class="ct">📦 Pack hochladen</div></div>
-        <div class="cb">
-          <div class="uz" onclick="document.getElementById('pk-file').click()" id="pk-drop">
-            <div class="ui">📦</div><div>Pack-Datei hierher ziehen</div>
-            <div class="xs2 dim" style="margin-top:3px">.mcpack · .mcaddon · .mcworld</div>
-            <input type="file" id="pk-file" accept=".mcpack,.mcaddon,.mcworld,.zip" onchange="uploadPack(this)">
-          </div>
-        </div>
-      </div>
       <div class="card">
         <div class="ch">
           <div class="ct">🌍 Packs für Welt</div>

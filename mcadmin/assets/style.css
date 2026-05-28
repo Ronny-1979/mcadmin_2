@@ -47,6 +47,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 
 .main{margin-left:220px;flex:1;display:flex;flex-direction:column}
 .topbar{background:#222;border-bottom:3px solid #111;padding:0 20px;height:48px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 0 #333}
+.topbar2{background:#222;border-bottom:3px solid #111;padding:4px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:48px;z-index:49;box-shadow:0 2px 0 #333}
 .pt{font-size:10px;font-weight:700;font-family:'Press Start 2P',monospace;text-shadow:1px 1px #000}
 .content{padding:18px;flex:1}
 
@@ -264,6 +265,7 @@ select.pinp option{background:var(--bg3)}
   .g4{grid-template-columns:repeat(2,1fr)}
   .content{padding:12px}
   .topbar{padding:0 12px}
+  .topbar2{padding:4px 12px}
   .con-out{min-height:200px}
   .con-in input{font-size:16px}
   .modal{width:min(440px,95vw);padding:18px}
@@ -301,6 +303,7 @@ select.pinp option{background:var(--bg3)}
   .g4{grid-template-columns:1fr}
   .content{padding:8px}
   .topbar{padding:0 8px}
+  .topbar2{padding:4px 8px}
   #tb-world{display:none}
 }
 @media(min-width:769px){
@@ -338,6 +341,7 @@ html[data-theme="light"] .sfooter{border-top-color:#9aa6b2}
 html[data-theme="light"] .suser{background:#d4dde5;border-color:#eef3f7 #9aa6b2 #9aa6b2 #eef3f7}
 
 html[data-theme="light"] .topbar{background:#e3e8ed;border-bottom-color:#9aa6b2;box-shadow:0 2px 0 #c1cad3}
+html[data-theme="light"] .topbar2{background:#e3e8ed;border-bottom-color:#9aa6b2;box-shadow:0 2px 0 #c1cad3}
 html[data-theme="light"] .pt,
 html[data-theme="light"] .ct,
 html[data-theme="light"] .mh{color:var(--text);text-shadow:1px 1px rgba(255,255,255,.65)}
