@@ -2,7 +2,7 @@
 // Globales Zustandsobjekt: Server-Info, Packs, Konsolen-Einstellungen und aktive Welten
 const G={
   srv:{running:false,version:'',active_world:'',players:[]},
-  ver:null,packs:{behavior:[],resource:[]},wPacks:{behavior:[],resource:[]},
+  ver:null,panelVer:null,packs:{behavior:[],resource:[]},wPacks:{behavior:[],resource:[]},
   propsWorld:null,propsData:{},
   conPaused:false,conTimer:null,conActive:false,conHist:[],conHistIdx:-1,conLines:100,
   srvWasRunning:false,
@@ -79,6 +79,48 @@ function showPage(page,el){
   if(page==='dashboard')startCon();else stopCon();
 }
 
+
+// Öffnet direkt die Update-Seite und den Updates-Reiter in den Einstellungen
+function openUpdatesPage(){
+  const nav=document.querySelector(".ni[onclick*=settings]");
+  showPage('settings',nav);
+  const btn=[...document.querySelectorAll('#settings-tabs .tb')].find(b=>b.textContent.includes('Updates'));
+  if(btn) switchSettingsTab('updates',btn);
+}
+
+// Aktualisiert die Versionsanzeige oben im Sidebar-Logo
+function updateSidebarVersions(){
+  const mcEl=document.getElementById('side-mc-version');
+  const pEl=document.getElementById('side-panel-version');
+  if(mcEl){
+    const cur=(G.ver&&G.ver.current)||(G.srv&&G.srv.version)||'?';
+    const upd=!!(G.ver&&G.ver.update_available);
+    mcEl.textContent='MC: '+(cur&&cur!=='nicht installiert'?'v'+cur:cur);
+    mcEl.classList.toggle('update',upd);
+    mcEl.title=upd?`Minecraft-Update verfügbar: ${cur} → ${G.ver.latest||'?'} — klicken zum Update`:'Minecraft-Version';
+  }
+  if(pEl){
+    const cur=(G.panelVer&&G.panelVer.current)||'?';
+    const upd=!!(G.panelVer&&G.panelVer.update_available);
+    pEl.textContent='Panel: '+cur;
+    pEl.classList.toggle('update',upd);
+    pEl.title=upd?`Panel-Update verfügbar: ${cur} → ${G.panelVer.latest||'?'} — klicken zum Update`:'Panel-Version';
+  }
+}
+
+// Prüft Updates im Hintergrund für die kleine Versionsanzeige in der Sidebar
+async function refreshSidebarUpdateInfo(force=false){
+  try{
+    const [mc,panel]=await Promise.all([
+      api('check_version'),
+      api('check_panel_update',force?{force:1}:{})
+    ]);
+    G.ver=mc;
+    G.panelVer=panel;
+    updateSidebarVersions();
+  }catch(e){updateSidebarVersions();}
+}
+
 // ═══ STATUS ═══════════════════════════════════════════════
 // Fragt den Server-Status ab und aktualisiert alle Status-Elemente im Dashboard (inkl. Uptime)
 async function refreshStatus(){
@@ -88,6 +130,7 @@ async function refreshStatus(){
     if(s.running){tb.className='sb on';tb.innerHTML='<span class="dot"></span> Online';ds.innerHTML='<span class="tg">Online</span>';}
     else{tb.className='sb off';tb.innerHTML='<span class="dot"></span> Offline';ds.innerHTML='<span class="tr">Offline</span>';}
     document.getElementById('d-ver').textContent='v'+(s.version||'?');
+    updateSidebarVersions();
     const upEl=document.getElementById('d-uptime');if(upEl)upEl.textContent=s.uptime?'⏱ '+s.uptime:'';
     document.getElementById('d-world').textContent=s.active_world||'keine';
     document.getElementById('d-players').textContent=s.players.length;
@@ -241,6 +284,7 @@ async function checkVer(){
   try{
     const[info,inst]=await Promise.all([api('check_version'),api('server_installed')]);
     G.ver=info;
+    updateSidebarVersions();
     document.getElementById('v-cur').textContent=info.current||'n/a';
     document.getElementById('v-lat').textContent=info.latest||'n/a';
     const btn=document.getElementById('btn-upd');const ub=document.getElementById('mc-ub');
@@ -722,6 +766,8 @@ async function checkPanelUpdate(force){
   if(btn)btn.disabled=true;
   try{
     const r=await api('check_panel_update',force?{force:1}:{});
+    G.panelVer=r;
+    updateSidebarVersions();
     if(pCur)pCur.textContent=r.current||'?';
     if(pLat)pLat.textContent=r.latest||'?';
     let ubHtml='';
@@ -870,7 +916,9 @@ function e(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 (async function(){
   setTheme(getTheme());
   await refreshStatus();
+  refreshSidebarUpdateInfo();
   setInterval(refreshStatus,10000);
+  setInterval(()=>refreshSidebarUpdateInfo(),300000);
   setupDrop('bk-drop','bk-imp',importBk);
   setupDrop('pk-drop','pk-file',uploadPack);
   setupDrop('wld-drop','wld-file',uploadWorld);
