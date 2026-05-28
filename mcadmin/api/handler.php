@@ -159,6 +159,13 @@ try {
             $ok     = toggle_pack_for_world($world,$uuid,$type,$enable);
             if ($ok) apply_world_packs($world);
             echo json_encode(['success'=>$ok]); break;
+        case 'remove_pack_from_world': // Entfernt eine Pack-Zuordnung wirklich aus einer Welt
+            $world = $_POST['world']??'';
+            $uuid  = $_POST['uuid']??'';
+            $type  = $_POST['type']??'resource';
+            $ok    = remove_pack_from_world($world,$uuid,$type);
+            if ($ok) apply_world_packs($world);
+            echo json_encode(['success'=>$ok]); break;
         case 'upload_pack':     // Installiert ein hochgeladenes Pack (.mcpack/.mcaddon/.zip)
             if (!isset($_FILES['pack'])||$_FILES['pack']['error']!==UPLOAD_ERR_OK) {
                 echo json_encode(['success'=>false,'message'=>'Upload fehlgeschlagen']); break;
