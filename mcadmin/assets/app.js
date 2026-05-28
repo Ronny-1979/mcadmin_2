@@ -385,9 +385,9 @@ async function loadWorlds(){
         <div class="wacts">
           ${w.name!==active?`<button class="btn primary xs" onclick="switchW('${e(w.name)}')">▶ Aktivieren</button>`:''}
           <button class="btn ghost xs" onclick="editProps('${e(w.name)}')">⚙️ Einstellungen</button>
-          <button class="btn ghost xs" onclick="openRenameModal('${e(w.name)}')">✏️ Umbenennen</button>
-          ${w.name!==active?`<button class="btn ghost xs" onclick="document.getElementById('wld-pk-${e(w.name)}').click()">📦 Pack hochladen</button><input type="file" id="wld-pk-${e(w.name)}" accept=".mcpack,.mcaddon,.zip" style="display:none" onchange="uploadPackForWorld(this,'${e(w.name)}')">`:``}
-          ${w.name!==active?`<button class="btn danger xs" onclick="delWorld('${e(w.name)}')">🗑 Löschen</button>`:''}
+          ${!(w.name===active&&G.srv.running)?`<button class="btn ghost xs" onclick="openRenameModal('${e(w.name)}')">✏️ Umbenennen</button>`:''}
+          ${!(w.name===active&&G.srv.running)?`<button class="btn ghost xs" onclick="document.getElementById('wld-pk-${e(w.name)}').click()">📦 Pack hochladen</button><input type="file" id="wld-pk-${e(w.name)}" accept=".mcpack,.mcaddon,.zip" style="display:none" onchange="uploadPackForWorld(this,'${e(w.name)}')">`:``}
+          ${!(w.name===active&&G.srv.running)?`<button class="btn danger xs" onclick="delWorld('${e(w.name)}')">🗑 Löschen</button>`:''}
         </div>
       </div>
       ${w.missing_packs_count>0?`<div class="miss-panel hidden" id="mpp-${e(w.name)}"></div>`:''}
@@ -709,39 +709,39 @@ async function saveRestartSchedule(){
   const r=await api('save_restart_schedule',{enabled:enabled?'true':'false',time});
   toast(r.message||(r.success?'Gespeichert':'Fehler'),r.success?'success':'error');
 }
-// Prüft ob ein Panel-Update verfügbar ist und zeigt den Update-Button bei Bedarf
+// Prüft ob ein Panel-Update verfügbar ist und aktiviert den Update-Button bei Bedarf
 async function checkPanelUpdate(force){
-  const cont=document.getElementById('panel-upd-cont');
   const ub=document.getElementById('panel-ub');
+  const btn=document.getElementById('btn-panel-upd');
   const pCur=document.getElementById('p-cur');
   const pLat=document.getElementById('p-lat');
+  const log=document.getElementById('panel-upd-log');
   if(ub){ub.style.display='none';ub.innerHTML='';}
   if(pCur)pCur.textContent='...';
   if(pLat)pLat.textContent='...';
+  if(btn)btn.disabled=true;
   try{
     const r=await api('check_panel_update',force?{force:1}:{});
     if(pCur)pCur.textContent=r.current||'?';
     if(pLat)pLat.textContent=r.latest||'?';
     let ubHtml='';
-    let contHtml='';
     if(!r.has_update_script){
       ubHtml=`<div class="ub warn2" style="margin:0"><div>⚠️</div><div>Update-Skript fehlt. Einmalig über die Shell ausführen:<br><code style="font-size:11px;word-break:break-all">curl -fsSL https://raw.githubusercontent.com/Ronny-1979/mcadmin/main/install.sh | sudo bash -s -- --update</code></div></div>`;
     }else if(r.update_available){
       ubHtml=`<div class="ub" style="margin:0"><div>🔔</div><div><strong>Update verfügbar!</strong> Aktuelle Konfiguration und Passwörter bleiben erhalten.</div></div>`;
-      contHtml=`<button class="btn warn" id="btn-panel-upd" onclick="startPanelUpdate()" style="margin-top:4px">⬆ Panel jetzt aktualisieren</button>`;
+      if(btn)btn.disabled=false;
     }else{
       ubHtml=`<div class="ub good" style="margin:0"><div>✅</div><div><strong class="tg">Aktuell!</strong> Panel ist auf dem neuesten Stand.</div></div>`;
     }
-    contHtml+=`<div id="panel-upd-log"></div>`;
     if(ub&&ubHtml){ub.innerHTML=ubHtml;ub.style.display='';}
-    if(cont)cont.innerHTML=contHtml;
-  }catch(err){if(cont)cont.innerHTML='<div class="dim xs2">Prüfung fehlgeschlagen</div>';}
+  }catch(err){if(log)log.innerHTML='<span class="dim">Prüfung fehlgeschlagen</span>';}
 }
 let panelUpdTimer=null;
 // Startet das Panel-Update nach Bestätigung und pollt den Fortschritt
 async function startPanelUpdate(){
   if(!confirm('Panel jetzt aktualisieren?\n\nDie Seite lädt danach automatisch neu. Der Minecraft-Server läuft weiter.'))return;
   const btn=document.getElementById('btn-panel-upd');if(btn)btn.disabled=true;
+  const log=document.getElementById('panel-upd-log');if(log)log.innerHTML='<span class="dim">Starte Panel-Update...</span>';
   const r=await api('start_panel_update');
   if(!r.success){toast(r.message||'Fehler','error',7000);if(btn)btn.disabled=false;return;}
   toast('Panel-Update gestartet...','info');
@@ -752,7 +752,7 @@ async function startPanelUpdate(){
 async function pollPanelUpd(){
   const s=await api('panel_update_status');
   const log=document.getElementById('panel-upd-log');
-  if(log&&s.message)log.innerHTML=`<div class="dim xs2" style="font-style:italic;margin-top:8px">${e(s.message)}</div>`;
+  if(log&&s.message)log.innerHTML=`<span class="dim">${e(s.message)}</span>`;
   if(s.step==='complete'&&s.status==='done'){
     clearInterval(panelUpdTimer);panelUpdTimer=null;
     toast('Panel aktualisiert! Seite wird neu geladen...','success',4000);
@@ -760,12 +760,10 @@ async function pollPanelUpd(){
   }else if(s.status==='error'){
     clearInterval(panelUpdTimer);panelUpdTimer=null;
     const btn=document.getElementById('btn-panel-upd');if(btn)btn.disabled=false;
-    // Vollständigen Log laden und anzeigen
     try{
       const logR=await api('get_panel_update_log');
-      const logEl=document.getElementById('panel-upd-log');
-      if(logEl&&logR.lines&&logR.lines.length){
-        logEl.innerHTML='<pre style="font-size:11px;background:var(--bg);border:1px solid var(--border);padding:10px;border-radius:6px;max-height:300px;overflow-y:auto;margin-top:8px;white-space:pre-wrap;word-break:break-all">'+e(logR.lines.join('\n'))+'</pre>';
+      if(log&&logR.lines&&logR.lines.length){
+        log.innerHTML='<pre style="font-size:11px;white-space:pre-wrap;word-break:break-all">'+e(logR.lines.join('\n'))+'</pre>';
       }
     }catch(_){}
     toast('Update fehlgeschlagen — Log unten angezeigt','error',8000);

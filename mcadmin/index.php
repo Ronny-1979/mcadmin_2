@@ -444,7 +444,8 @@ try {
                 <div class="stat"><div class="sl">Installiert</div><div id="p-cur" style="font-size:14px;font-weight:700;margin-top:3px">...</div></div>
                 <div class="stat"><div class="sl">Verfügbar (GitHub)</div><div id="p-lat" style="font-size:14px;font-weight:700;margin-top:3px">...</div></div>
               </div>
-              <div id="panel-upd-cont"></div>
+              <div class="lbox mb12" id="panel-upd-log"><span class="dim">Kein aktiver Prozess.</span></div>
+              <button class="btn warn" onclick="startPanelUpdate()" id="btn-panel-upd" disabled>⬆ Panel aktualisieren</button>
             </div>
           </div>
         </div>
@@ -473,26 +474,18 @@ try {
           <div class="card" style="margin:0">
           <div class="ch"><div class="ct">🔔 Automatische Update-Prüfung</div></div>
           <div class="cb">
-            <div class="set-group" style="margin:0">
-              <div class="set-row">
-                <div>
-                  <div class="set-label">Nach Minecraft- und Panel-Updates suchen</div>
-                  <div class="set-desc">Prüft einmal täglich zur gewählten Uhrzeit. Wenn ein Update verfügbar ist, kommt eine Discord-Nachricht.</div>
-                </div>
-                <label class="tgl">
-                  <input type="checkbox" id="upd-check-on">
-                  <span class="tsl"></span>
-                </label>
-              </div>
-              <div class="set-row">
-                <div>
-                  <div class="set-label">Uhrzeit</div>
-                  <div class="set-desc">Empfohlen nachts, z.B. 04:00 Uhr.</div>
-                </div>
-                <input type="time" id="upd-check-time" style="max-width:130px">
-              </div>
+            <div class="fx ac mb12" style="gap:12px">
+              <label class="tgl" style="margin:0">
+                <input type="checkbox" id="upd-check-on">
+                <span class="tsl"></span>
+              </label>
+              <span>Nach Minecraft- und Panel-Updates suchen</span>
             </div>
-            <div class="fx g8" style="margin-top:12px;flex-wrap:wrap">
+            <div class="fr">
+              <label>Uhrzeit</label>
+              <input type="time" id="upd-check-time" value="04:00" style="width:auto">
+            </div>
+            <div class="fx g8" style="flex-wrap:wrap">
               <button class="btn primary" onclick="saveUpdateCheckSchedule()">💾 Update-Prüfung speichern</button>
               <button class="btn ghost" onclick="runUpdateCheckNow()">🔎 Jetzt prüfen</button>
             </div>
