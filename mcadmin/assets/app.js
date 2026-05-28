@@ -584,7 +584,7 @@ function renderPacks(){
     let html='';
     if(packs.length){
       html+=packs.map(p=>{
-        const en=active.some(a=>(typeof a==='string'?a:a.pack_id)===p.uuid);
+        const en=active.some(a=>((typeof a==='string'?a:a.pack_id)===p.uuid) && (typeof a==='string' || a.enabled!==false));
         return`<div class="pkc"><div class="pki">${icon(p)}</div><div style="flex:1;min-width:0"><div class="pkn">${e(p.name)}</div><div class="pkd">${e(p.description||'—')}</div><div class="pkv">v${e(p.version)} ${subtypeBadge(p.subtype)}</div>${worldBadges(p)}</div><label class="tgl"><input type="checkbox" ${en?'checked':''} ${!world?'disabled':''} onchange="togglePk('${e(world)}','${e(p.uuid)}','${t}',this.checked)"><span class="tsl"></span></label>${p.user_pack?`<button class="icon-btn" title="Pack löschen" onclick="deletePack('${e(p.uuid)}','${t}','${e(p.name)}')">🗑</button>`:''}</div>`;
       }).join('');
     }
@@ -604,7 +604,7 @@ async function togglePk(w,u,t,en){const r=await api('toggle_pack',{world:w,uuid:
 // Löscht ein selbst installiertes Pack nach Bestätigung und aktualisiert die Listen
 async function deletePack(uuid,type,name){if(!confirm(`Pack "${name}" wirklich löschen?\nEs wird aus allen Welten entfernt und vom Server gelöscht.`))return;const r=await api('delete_pack',{uuid,type});toast(r.message||(r.success?'Pack gelöscht':'Fehler'),r.success?'success':'error');if(r.success){await loadAllPacks();await loadWPacks();}}
 // Entfernt eine gebrochene Pack-Referenz aus dem Welt-State (kein Pack nötig)
-async function removeMissingRef(world,uuid,type){if(!confirm('Gebrochene Pack-Referenz aus dieser Welt entfernen?\nDas Pack bleibt nicht mehr der Welt zugewiesen.'))return;const r=await api('toggle_pack',{world,uuid,type,enable:'0'});toast(r.success?'Referenz entfernt':'Fehler',r.success?'success':'error');if(r.success){await loadWorlds();await loadAllPacks();await loadWPacks();}}
+async function removeMissingRef(world,uuid,type){if(!confirm('Gebrochene Pack-Referenz aus dieser Welt entfernen?\nDas Pack bleibt nicht mehr der Welt zugewiesen.'))return;const r=await api('remove_pack_from_world',{world,uuid,type});toast(r.success?'Referenz entfernt':'Fehler',r.success?'success':'error');if(r.success){await loadWorlds();await loadAllPacks();await loadWPacks();}}
 // Wechselt zwischen Resource- und Behavior-Pack-Tab
 function switchPkTab(tab,btn){const c=btn.closest('.card');c.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));c.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById('pt-'+(tab==='resource'?'res':'beh')).classList.add('active');}
 // Lädt eine Pack-Datei hoch und installiert sie auf dem Server
