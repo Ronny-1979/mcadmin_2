@@ -572,10 +572,7 @@ function renderPacks(){
     const missing=G.wPacks[t+'_missing']||[];
     const el=document.getElementById((t==='resource'?'res':'beh')+'-list');
 
-    // Wenn Welt gewählt: nur Packs dieser Welt anzeigen
-    const packs=world
-      ? allPacks.filter(p=>(p.used_by_worlds||[]).includes(world)||(p.imported_by_worlds||[]).includes(world))
-      : allPacks;
+    const packs=allPacks;
 
     const subtypeBadge=s=>({script:'<span class="badge badge-o">Script</span>',data:'<span class="badge badge-d">Behavior</span>',resources:'<span class="badge badge-b">Resource</span>'}[s]||'');
     const icon=p=>p.subtype==='script'?'📜':(t==='resource'?'🎨':'⚙️');
@@ -593,7 +590,7 @@ function renderPacks(){
       html+=missing.map(mp=>`<div class="pkc pk-missing"><div class="pki">❓</div><div style="flex:1;min-width:0"><div class="pkn" style="color:var(--red)">${mp.name?e(mp.name):'Unbekanntes Pack'}</div><div class="pkv" style="user-select:all">${e(mp.uuid)}</div><div class="pkv">v${e(mp.version)} · Nicht installiert</div>${(mp.required_by&&mp.required_by.length)?`<div class="pkv" style="color:var(--text2);margin-top:2px">📎 Benötigt von: ${mp.required_by.map(n=>e(n)).join(', ')}</div>`:''}</div><span class="badge badge-r" style="flex-shrink:0">Fehlt</span><button class="icon-btn" title="Referenz entfernen" onclick="removeMissingRef('${e(world)}','${e(mp.uuid)}','${t}')">✕</button></div>`).join('');
     }
     if(!html){
-      html=`<div class="dim xs2" style="text-align:center;padding:18px">${world?'Keine Packs für diese Welt':'Keine Packs installiert'}</div>`;
+      html=`<div class="dim xs2" style="text-align:center;padding:18px">Keine Packs installiert</div>`;
     }
     el.innerHTML=html;
   });
