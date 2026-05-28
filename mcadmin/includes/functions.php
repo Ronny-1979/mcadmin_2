@@ -1150,14 +1150,12 @@ function get_worlds(): array {
             }
         }
 
-        $wp = $state['world_packs'][$d] ?? [];
         $worlds[] = [
             'name'                => $d,
             'size_human'          => format_bytes($size),
             'has_own_properties'  => file_exists(world_properties_file($d)),
             'experiments'         => get_world_experiments($path),
             'missing_packs_count' => $missingCount,
-            'pack_count'          => count($wp['behavior'] ?? []) + count($wp['resource'] ?? []),
         ];
     }
     return $worlds;
@@ -1938,24 +1936,17 @@ function get_world_packs(string $worldName): array {
     $state = get_state();
     $result = $state['world_packs'][$worldName] ?? ['behavior' => [], 'resource' => []];
 
-    // Installierte Packs mit Namen auflösen + fehlende Packs ermitteln
+    // Fehlende Packs pro Typ ermitteln und an Response anhängen
     foreach (['behavior', 'resource'] as $pt) {
-        $resolved = [];
-        $missing   = [];
+        $missing = [];
         foreach ($result[$pt] ?? [] as $ref) {
             $normRef = normalize_pack_ref($ref);
             if ($normRef === null) continue;
-            $inst = find_installed_pack($pt, $normRef['pack_id'], $normRef['version']);
-            if (!$inst && $normRef['version'] === null) {
-                $inst = find_installed_pack($pt, $normRef['pack_id']);
+            $installed = find_installed_pack($pt, $normRef['pack_id'], $normRef['version']);
+            if (!$installed && $normRef['version'] === null) {
+                $installed = find_installed_pack($pt, $normRef['pack_id']);
             }
-            $resolved[] = [
-                'uuid'    => $normRef['pack_id'],
-                'version' => $normRef['version'] ? implode('.', $normRef['version']) : '?',
-                'name'    => $inst ? ($inst['name'] ?? 'Unbekannt')
-                                   : (find_pack_name_anywhere($pt, $normRef['pack_id']) ?? 'Unbekannt'),
-            ];
-            if (!$inst) {
+            if (!$installed) {
                 $missing[] = [
                     'uuid'        => $normRef['pack_id'],
                     'version'     => $normRef['version'] ? implode('.', $normRef['version']) : '?',
@@ -1965,7 +1956,6 @@ function get_world_packs(string $worldName): array {
                 ];
             }
         }
-        $result[$pt]            = $resolved;
         $result[$pt . '_missing'] = $missing;
     }
 
@@ -2003,19 +1993,6 @@ function toggle_pack_for_world(string $worldName, string $packUuid, string $pack
     }
 
     return save_state($state);
-}
-
-// Entfernt ein einzelnes Pack aus einer Welt und schreibt die Packs neu
-function remove_pack_from_world(string $worldName, string $uuid, string $type): array {
-    $state = get_state();
-    $packs = $state['world_packs'][$worldName][$type] ?? [];
-    $state['world_packs'][$worldName][$type] = array_values(array_filter($packs, function ($ref) use ($uuid) {
-        $n = normalize_pack_ref($ref);
-        return !($n && strtolower($n['pack_id']) === strtolower($uuid));
-    }));
-    save_state($state);
-    apply_world_packs($worldName);
-    return ['success' => true];
 }
 
 // Schreibt die aktiven Packs einer Welt in die world_*_packs.json-Dateien
