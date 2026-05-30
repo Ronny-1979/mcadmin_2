@@ -996,3 +996,54 @@ label{color:#AAAAAA;font-size:11px;margin-bottom:4px;display:block}
   .mob-menu-btn{display:inline-flex}
   #mc-bg .mc-terrain{height:50px}
 }
+
+/* ══════════════════════════════════════════════
+   LIGHT THEME: MINECRAFT DAYTIME MODE
+   Sky-Zyklus pausiert auf Tag-Stellung,
+   Sterne/Mond ausgeblendet, Panels etwas heller
+   ══════════════════════════════════════════════ */
+html[data-theme="light"] .mc-sky{
+  animation-play-state:paused;
+  background:linear-gradient(180deg,#1b6bab 0%,#4a9eda 45%,#8dd5f7 70%,#c8eafb 100%) !important;
+}
+html[data-theme="light"] .mc-stars{
+  opacity:0 !important;
+  animation:none;
+}
+html[data-theme="light"] .mc-moon{
+  opacity:0;
+  animation:none;
+}
+html[data-theme="light"] .mc-sun{
+  animation-play-state:paused;
+  top:12% !important;
+  left:48% !important;
+  opacity:1 !important;
+}
+html[data-theme="light"] .sidebar{
+  background:
+    repeating-conic-gradient(#5a5a5a 0 25%,#525252 0 50%) 0 0 / 8px 8px,
+    #585858;
+}
+html[data-theme="light"] .card{
+  background:#383838;
+  border-color:#666 #1c1c1c #1c1c1c #666;
+}
+html[data-theme="light"] .ch{
+  background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,transparent 100%),#444444;
+  border-bottom-color:#222;
+}
+html[data-theme="light"] .topbar{
+  background:
+    repeating-conic-gradient(#3c3c3c 0 25%,#343434 0 50%) 0 0 / 4px 4px,
+    #393939;
+}
+html[data-theme="light"] .topbar2{
+  background:rgba(0,0,0,.65);
+}
+html[data-theme="light"] .lw{
+  background:transparent;
+}
+html[data-theme="light"] .main{
+  background:rgba(200,225,255,.04);
+}
