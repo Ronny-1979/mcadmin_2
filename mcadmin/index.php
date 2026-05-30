@@ -42,9 +42,23 @@ try {
   document.documentElement.dataset.theme = 'dark';
 }
 </script>
-<link rel="stylesheet" href="assets/style.css?v=8">
+<link rel="stylesheet" href="assets/style.css?v=9">
 </head>
 <body>
+<!-- ═══ ANIMATED MINECRAFT PANORAMA ═══ -->
+<div id="mc-bg" aria-hidden="true">
+  <div class="mc-sky"></div>
+  <div class="mc-stars"></div>
+  <div class="mc-clouds">
+    <div class="mc-cloud" style="top:8%;animation-duration:55s;animation-delay:0s;width:96px;height:20px"></div>
+    <div class="mc-cloud" style="top:14%;animation-duration:72s;animation-delay:-22s;width:64px;height:14px"></div>
+    <div class="mc-cloud" style="top:5%;animation-duration:88s;animation-delay:-44s;width:128px;height:24px"></div>
+    <div class="mc-cloud" style="top:20%;animation-duration:62s;animation-delay:-12s;width:80px;height:16px"></div>
+  </div>
+  <div class="mc-sun"></div>
+  <div class="mc-moon"></div>
+  <div class="mc-terrain"></div>
+</div>
 <!-- ═══ SVG SPRITES ═══ -->
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
   <defs>
