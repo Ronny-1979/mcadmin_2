@@ -42,7 +42,7 @@ try {
   document.documentElement.dataset.theme = 'dark';
 }
 </script>
-<link rel="stylesheet" href="assets/style.css?v=7">
+<link rel="stylesheet" href="assets/style.css?v=8">
 </head>
 <body>
 <!-- ═══ SVG SPRITES ═══ -->
@@ -160,7 +160,7 @@ try {
     <div class="fr"><label>Passwort</label><input type="password" name="password" autofocus autocomplete="current-password" placeholder="Passwort eingeben..."></div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
       <input type="checkbox" name="remember" id="lrem" value="1" style="width:auto;accent-color:#5db85c;cursor:pointer">
-      <label for="lrem" style="margin:0;cursor:pointer;font-size:12px;color:#444">Angemeldet bleiben (30 Tage)</label>
+      <label for="lrem" style="margin:0;cursor:pointer;font-size:12px;color:var(--text2)">Angemeldet bleiben (30 Tage)</label>
     </div>
     <button type="submit" class="btn primary" style="width:100%;justify-content:center;padding:10px">Anmelden</button>
   </form>
@@ -265,11 +265,11 @@ try {
         <a href="#" onclick="showPage('settings',document.querySelector('[onclick*=settings]'));return false;" style="color:var(--yellow);margin-left:6px">Jetzt ändern →</a></div>
       </div>
       <?php endif; ?>
-      <div class="card">
+      <div class="card card-players">
         <div class="ch"><div class="ct">👥 Online Spieler</div><span id="d-pcnt" class="dim xs2">0 online</span></div>
         <div class="cb" id="d-plist"><div class="dim xs2" style="text-align:center;padding:18px">Keine Spieler online</div></div>
       </div>
-      <div class="card">
+      <div class="card card-console">
         <div class="ch">
           <div class="ct">💻 Server-Konsole</div>
           <div class="fx ac g6">
@@ -316,7 +316,7 @@ try {
               </div>
             </div>
           </div>
-          <div class="card">
+          <div class="card card-worlds">
             <div class="ch">
               <div class="ct">🌍 Welten</div>
               <button class="btn primary sm" onclick="openModal('modal-create-world')">+ Neue Welt</button>
