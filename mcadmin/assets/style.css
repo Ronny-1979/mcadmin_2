@@ -741,6 +741,7 @@ label{color:#AAAAAA;font-size:11px;margin-bottom:4px;display:block}
   color:#FFFF55;
 }
 .tp{display:none}.tp.active{display:block}
+.stp{display:none}.stp.active{display:block}
 
 /* ══════════════════════════════════════════════
    TOASTS — Chat Messages
@@ -905,9 +906,11 @@ label{color:#AAAAAA;font-size:11px;margin-bottom:4px;display:block}
 .dim{color:#AAAAAA}
 .tw{font-weight:700}
 .lbox{background:#1A1A1A;border:2px solid #333;padding:10px;font-family:'Cascadia Code','Consolas',monospace;font-size:12px;color:#CCCCCC;word-break:break-all}
-.ig{image-rendering:pixelated}
-.uz{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.ui{font-size:11px;color:#AAAAAA}
+.ig{display:flex;gap:7px}.ig input,.ig select{flex:1}
+.uz{border:2px dashed #4A4A4A;padding:22px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;color:#AAAAAA}
+.uz:hover,.uz.dv{border-color:#55FF55;color:#FFFFFF;background:rgba(85,255,85,.05)}
+.uz .ui{font-size:26px;margin-bottom:6px}
+.uz input[type=file]{display:none}
 
 /* ══════════════════════════════════════════════
    SETTINGS GROUPS
