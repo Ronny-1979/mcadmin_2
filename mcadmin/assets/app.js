@@ -450,24 +450,20 @@ async function toggleInstalledPanel(worldName){
   panel.classList.remove('hidden');
   panel.innerHTML='<div class="dim xs2" style="padding:6px 0"><span class="spin">⟳</span> Lade...</div>';
   try{
-    const data=await api('get_world_packs',{world:worldName});
-    const all=[...(data.behavior||[]).map(p=>({...p,ptype:'behavior'})),
-               ...(data.resource||[]).map(p=>({...p,ptype:'resource'}))];
-    if(!all.length){panel.innerHTML='<div class="dim xs2" style="padding:6px 0">Keine Packs zugeordnet.</div>';return;}
-    panel.innerHTML=`<div style="margin-top:8px">
-      <div style="font-weight:600;font-size:13px;margin-bottom:8px">Zugeordnete Packs (${all.length}):</div>
-      ${all.map(p=>`<div class="pkc">
-        <div class="pki">${p.ptype==='behavior'?'⚙️':'🎨'}</div>
-        <div style="flex:1;min-width:0">
-          <div class="pkn">${e(p.name)}</div>
-          <div class="pkv"><span class="badge badge-${p.ptype==='behavior'?'b':'p'}">${p.ptype==='behavior'?'Behavior':'Resource'}</span> v${e(p.version)}</div>
-        </div>
-        <label class="tgl"><input type="checkbox" ${p.enabled!==false?'checked':''}
-          onchange="togglePkWorld('${e(worldName)}','${e(p.uuid)}','${e(p.ptype)}',this.checked,'${e(p.name)}')">
-          <span class="tsl"></span></label>
-        <button class="icon-btn" title="Pack komplett entfernen" onclick="removePackFromWorld('${e(worldName)}','${e(p.uuid)}','${e(p.ptype)}','${e(p.name)}')">✕</button>
-      </div>`).join('')}
-    </div>`;
+    const[allPacks,wPacks]=await Promise.all([api('get_packs'),api('get_world_packs',{world:worldName})]);
+    const asgn={};
+    for(const t of['behavior','resource']){for(const p of(wPacks[t]||[]))asgn[t+'|'+p.uuid]=(p.enabled!==false);}
+    const stBadge=s=>({script:'<span class="badge badge-o">Script</span>',data:'<span class="badge badge-d">Behavior</span>',resources:'<span class="badge badge-b">Resource</span>'}[s]||'');
+    const row=(p,t)=>{
+      const key=t+'|'+p.uuid;const en=key in asgn&&asgn[key]!==false;
+      return`<div class="pkc"><div class="pki">${p.subtype==='script'?'📜':(t==='resource'?'🎨':'⚙️')}</div><div style="flex:1;min-width:0"><div class="pkn">${e(p.name)}</div><div class="pkd">${e(p.description||'—')}</div><div class="pkv">v${e(p.version)} ${stBadge(p.subtype)}</div></div><label class="tgl"><input type="checkbox" ${en?'checked':''} onchange="togglePkWorld('${e(worldName)}','${e(p.uuid)}','${e(t)}',this.checked,'${e(p.name)}')"><span class="tsl"></span></label>${p.user_pack?`<button class="icon-btn" title="Pack löschen" onclick="deletePack('${e(p.uuid)}','${e(t)}','${e(p.name)}')">🗑</button>`:''}</div>`;
+    };
+    const bPacks=allPacks.behavior||[];const rPacks=allPacks.resource||[];
+    if(!bPacks.length&&!rPacks.length){panel.innerHTML='<div class="dim xs2" style="padding:6px 0">Keine Packs installiert.</div>';return;}
+    let html='<div style="margin-top:8px">';
+    if(bPacks.length)html+=`<div style="font-weight:600;font-size:12px;margin:6px 0 4px;color:var(--text2)">⚙️ Behavior Packs</div>${bPacks.map(p=>row(p,'behavior')).join('')}`;
+    if(rPacks.length)html+=`<div style="font-weight:600;font-size:12px;margin:10px 0 4px;color:var(--text2)">🎨 Resource Packs</div>${rPacks.map(p=>row(p,'resource')).join('')}`;
+    panel.innerHTML=html+'</div>';
   }catch(err){panel.innerHTML='<div class="dim xs2" style="padding:6px 0">❌ Fehler beim Laden.</div>';}
 }
 // Aktiviert/deaktiviert ein Pack für eine Welt direkt aus dem World-Panel
@@ -653,7 +649,7 @@ function renderPacks(){
 // Aktiviert oder deaktiviert ein Pack für eine Welt und lädt die Pack-Liste neu
 async function togglePk(w,u,t,en){const r=await api('toggle_pack',{world:w,uuid:u,type:t,enable:en?'1':'0'});if(r.success){toast(en?'Aktiviert':'Deaktiviert','success');await loadWPacks();}else{toast('Fehler','error');await loadWPacks();}}
 // Löscht ein selbst installiertes Pack nach Bestätigung und aktualisiert die Listen
-async function deletePack(uuid,type,name){if(!confirm(`Pack "${name}" wirklich löschen?\nEs wird aus allen Welten entfernt und vom Server gelöscht.`))return;const r=await api('delete_pack',{uuid,type});toast(r.message||(r.success?'Pack gelöscht':'Fehler'),r.success?'success':'error');if(r.success){await loadAllPacks();await loadWPacks();}}
+async function deletePack(uuid,type,name){if(!confirm(`Pack "${name}" wirklich löschen?\nEs wird aus allen Welten entfernt und vom Server gelöscht.`))return;const r=await api('delete_pack',{uuid,type});toast(r.message||(r.success?'Pack gelöscht':'Fehler'),r.success?'success':'error');if(r.success){await loadAllPacks();await loadWPacks();loadWorlds();}}
 // Entfernt eine gebrochene Pack-Referenz aus dem Welt-State (kein Pack nötig)
 async function removeMissingRef(world,uuid,type){if(!confirm('Gebrochene Pack-Referenz aus dieser Welt entfernen?\nDas Pack bleibt nicht mehr der Welt zugewiesen.'))return;const r=await api('toggle_pack',{world,uuid,type,enable:'0'});toast(r.success?'Referenz entfernt':'Fehler',r.success?'success':'error');if(r.success){await loadWorlds();await loadAllPacks();await loadWPacks();}}
 // Wechselt zwischen Resource- und Behavior-Pack-Tab
