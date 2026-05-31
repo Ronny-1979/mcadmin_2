@@ -763,6 +763,7 @@ label{color:#AAAAAA;font-size:11px;margin-bottom:4px;display:block}
   line-height:1.6;
 }
 @keyframes toast-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+.toast.hide{opacity:0;transform:translateX(100%);transition:all .25s ease}
 .ts-ok{border-color:#2A7A2A;color:#55FF55}
 .ts-er{border-color:#7A2A2A;color:#FF5555}
 .ts-in{border-color:#2A2A7A;color:#5555FF}
@@ -854,11 +855,13 @@ label{color:#AAAAAA;font-size:11px;margin-bottom:4px;display:block}
 /* ══════════════════════════════════════════════
    BACKUP / WORLD ITEM ROWS
    ══════════════════════════════════════════════ */
-.bki,.bkn,.bkm,.bkact{display:inline-flex;align-items:center}
-.bki{font-size:16px;margin-right:8px}
-.bkn{font-weight:600;color:#FFFFFF;font-size:12px}
-.bkm{font-size:10px;color:#AAAAAA;margin-left:8px}
-.bkact{gap:5px;margin-left:auto;flex-shrink:0}
+.bki{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #2A2A2A}
+.bki:last-child{border-bottom:none}
+.bki:hover{background:#232323}
+.bkn{font-size:12px;font-weight:600;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bkm{font-size:10px;color:#AAAAAA;margin-top:1px}
+.bkact{display:flex;align-items:center;gap:5px;flex-shrink:0;margin-left:auto}
+@media(max-width:600px){.bki{flex-wrap:wrap}.bkact{width:100%;margin-top:4px;justify-content:flex-end}}
 
 /* ══════════════════════════════════════════════
    RANK BARS
@@ -882,6 +885,7 @@ label{color:#AAAAAA;font-size:11px;margin-bottom:4px;display:block}
   animation:spin .7s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bkslide{0%{background-position:200% center}100%{background-position:-200% center}}
 
 /* ══════════════════════════════════════════════
    PLAYER-STATS ROWS
@@ -905,6 +909,12 @@ label{color:#AAAAAA;font-size:11px;margin-bottom:4px;display:block}
 .mb14{margin-bottom:14px}
 .dim{color:#AAAAAA}
 .tw{font-weight:700}
+/* Inline-Farbklassen (werden von app.js in innerHTML gesetzt) */
+.tg{color:#55FF55}
+.tr{color:#FF5555}
+/* Stat-Box (Versions-Info in Einstellungen) */
+.stat{background:#1A1A1A;border:2px solid #333;padding:13px}
+.sl{color:#AAAAAA;font-size:11px;margin-bottom:4px}
 .lbox{background:#1A1A1A;border:2px solid #333;padding:10px;font-family:'Cascadia Code','Consolas',monospace;font-size:12px;color:#CCCCCC;word-break:break-all}
 .ig{display:flex;gap:7px}.ig input,.ig select{flex:1}
 .uz{border:2px dashed #4A4A4A;padding:22px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;color:#AAAAAA}
